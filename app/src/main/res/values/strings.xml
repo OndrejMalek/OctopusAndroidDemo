@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">OctolabApp</string>
+    <string name="title_activity_rgb">RGBActivity</string>
+    <string name="action_settings">Settings</string>
 </resources>
