@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import kotlinx.android.synthetic.main.fragment_rgb.*
 import org.oelab.octopusengine.octolabapp.R
 
 /**
@@ -16,6 +17,10 @@ class RGBActivityFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_rgb, container, false)
+        val contentView = inflater.inflate(R.layout.fragment_rgb, container, false)
+
+
+
+        return contentView
     }
 }
