@@ -1,6 +1,6 @@
 package org.oelab.octopusengine.octolabapp.ui.main
 
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,7 +11,7 @@ import org.oelab.octopusengine.octolabapp.R
 /**
  * A placeholder fragment containing a simple view.
  */
-class RGBActivityFragment : Fragment() {
+class RGBActivityFragment : androidx.fragment.app.Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
