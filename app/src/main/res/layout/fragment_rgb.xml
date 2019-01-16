@@ -11,7 +11,7 @@
             android:id="@+id/ipAddressTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="16dp"
             android:text="IP Address"
             app:layout_constraintBottom_toBottomOf="@+id/ipAddressEditText"
             app:layout_constraintStart_toStartOf="parent"
@@ -21,10 +21,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginLeft="16dp"
-            android:layout_marginTop="28dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginRight="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
             android:ems="10"
             android:hint="192.168.x.x"
             android:text="192.168.5.105"
@@ -37,96 +35,77 @@
             android:id="@+id/udpPortTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
             android:text="Port"
             app:layout_constraintBottom_toBottomOf="@+id/udpPortEditText"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/ipAddressTextView"
             app:layout_constraintTop_toTopOf="@+id/udpPortEditText"/>
     <EditText
             android:id="@+id/udpPortEditText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginLeft="16dp"
             android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginRight="8dp"
+            android:layout_marginEnd="16dp"
             android:ems="10"
             android:hint="xxxxx"
             android:text="4000"
             android:inputType="numberDecimal"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toEndOf="@+id/udpPortTextView"
-            app:layout_constraintTop_toBottomOf="@+id/ipAddressEditText"/>
+            app:layout_constraintTop_toBottomOf="@+id/ipAddressEditText"
+            app:layout_constraintStart_toStartOf="@+id/ipAddressEditText"/>
 
-    <Button
+    <Switch
             android:id="@+id/toggleConnectionButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginLeft="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginRight="8dp"
-            android:text="Connect"
+            android:layout_width="88dp"
+            android:layout_height="21dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="24dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/udpPortEditText"/>
+            app:layout_constraintTop_toBottomOf="@+id/udpPortEditText"
+            app:layout_constraintStart_toEndOf="@+id/textView"
+            android:layout_marginStart="8dp"
+            app:layout_constraintHorizontal_bias="1.0" android:switchMinWidth="80dp"
+            android:textOn="on" android:textOff="off" android:switchPadding="19dp" android:showText="false"/>
 
     <SeekBar
             android:id="@+id/redSeekBar"
-            android:layout_width="0dp"
+            android:layout_width="363dp"
             android:layout_height="64dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginLeft="8dp"
             android:layout_marginTop="28dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginRight="8dp"
             android:max="255"
             android:progressTint="@color/red"
             android:thumbTint="@color/red"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintEnd_toEndOf="@+id/udpPortEditText"
 
 
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/toggleConnectionButton"/>
+            app:layout_constraintTop_toBottomOf="@+id/toggleConnectionButton"
+            app:layout_constraintStart_toStartOf="@+id/textView"/>
 
     <SeekBar
             android:id="@+id/greenSeekBar"
             android:layout_width="0dp"
             android:layout_height="64dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginLeft="8dp"
             android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginRight="8dp"
             android:max="255"
             android:progressTint="@color/green"
             android:thumbTint="@color/green"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/redSeekBar"
 
             app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/redSeekBar"
             app:layout_constraintTop_toBottomOf="@+id/redSeekBar"/>
 
     <SeekBar
             android:id="@+id/blueSeekBar"
             android:layout_width="0dp"
             android:layout_height="64dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginLeft="8dp"
             android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginRight="8dp"
             android:max="255"
             android:progressTint="@color/blue"
             android:thumbTint="@color/blue"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/greenSeekBar"
 
             app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/greenSeekBar"
             app:layout_constraintTop_toBottomOf="@+id/greenSeekBar"/>
 
     <androidx.constraintlayout.widget.Guideline
@@ -135,5 +114,13 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             app:layout_constraintGuide_begin="39dp"/>
+    <TextView
+            android:text="Send color"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/textView" app:layout_constraintStart_toStartOf="@+id/udpPortTextView"
+            app:layout_constraintTop_toTopOf="@+id/toggleConnectionButton"
+            app:layout_constraintBottom_toBottomOf="@+id/toggleConnectionButton"
+            app:layout_constraintVertical_bias="0.482"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -100,7 +100,9 @@ class RGBActivityFragment : androidx.fragment.app.Fragment() {
         return true
     }
 
-    private fun isValidPort(text: String) = text.matches("""\d{1,5}""".toRegex())
+    private fun isValidPort(text: String): Boolean {
+        return text.matches("""\d{1,5}""".toRegex()) && text.toInt() in 0..65535
+    }
 
     fun connect(
         rgbObservable: Observable<RGB>,
