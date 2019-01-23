@@ -1,6 +1,7 @@
 package org.oelab.octopusengine.octolabapp.ui.main
 
 import android.util.Log
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -38,18 +39,19 @@ class UdpSocket(var socket: DatagramSocket? = null) : IUdpSocket {
     ) {
         if (socket == null) throw SocketNotOpenException()
         val messageBytes = message.toByteArray()
-        socket!!.send(
-            DatagramPacket(
-                messageBytes,
-                messageBytes.size,
-                InetSocketAddress(
-                    InetAddress.getByName(ipAddress),
-                    port.toInt()
-                )
+        val datagramPacket = DatagramPacket(
+            messageBytes,
+            messageBytes.size,
+            InetSocketAddress(
+                InetAddress.getByName(ipAddress),
+                port.toInt()
             )
         )
+        socket!!.send(
+            datagramPacket
+        )
 
-        Log.d("UdpSocket.send", "message: $message , Thread: ${Thread.currentThread().name}")
+        Log.d("UdpSocket.send", "packet: ${ReflectionToStringBuilder.toString(datagramPacket)} \n message: $message , Thread: ${Thread.currentThread().name}")
     }
 
 
