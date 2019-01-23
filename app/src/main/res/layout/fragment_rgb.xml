@@ -8,16 +8,16 @@
                                                    tools:showIn="@layout/activity_rgb">
 
     <TextView
-            android:id="@+id/ipAddressTextView"
+            android:id="@+id/udpIpAddressTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:text="IP Address"
-            app:layout_constraintBottom_toBottomOf="@+id/ipAddressEditText"
+            app:layout_constraintBottom_toBottomOf="@+id/udpIpAddressEditText"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/ipAddressEditText"/>
+            app:layout_constraintTop_toTopOf="@+id/udpIpAddressEditText"/>
     <EditText
-            android:id="@+id/ipAddressEditText"
+            android:id="@+id/udpIpAddressEditText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -28,7 +28,7 @@
             android:text="192.168.5.105"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toEndOf="@+id/ipAddressTextView"
+            app:layout_constraintStart_toEndOf="@+id/udpIpAddressTextView"
             app:layout_constraintTop_toTopOf="parent"/>
 
     <TextView
@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:text="Port"
             app:layout_constraintBottom_toBottomOf="@+id/udpPortEditText"
-            app:layout_constraintStart_toStartOf="@+id/ipAddressTextView"
+            app:layout_constraintStart_toStartOf="@+id/udpIpAddressTextView"
             app:layout_constraintTop_toTopOf="@+id/udpPortEditText"/>
     <EditText
             android:id="@+id/udpPortEditText"
@@ -50,8 +50,8 @@
             android:text="4000"
             android:inputType="numberDecimal"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ipAddressEditText"
-            app:layout_constraintStart_toStartOf="@+id/ipAddressEditText"/>
+            app:layout_constraintTop_toBottomOf="@+id/udpIpAddressEditText"
+            app:layout_constraintStart_toStartOf="@+id/udpIpAddressEditText"/>
 
     <Switch
             android:id="@+id/toggleConnectionButton"
