@@ -7,13 +7,15 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.nio.channels.DatagramChannel
+import java.nio.charset.Charset
 
 interface IUdpSocket {
     fun open()
     fun send(
         message: String,
         ipAddress: String,
-        port: String
+        port: String,
+        charset: Charset
     )
 
     fun close()
@@ -35,10 +37,11 @@ class UdpSocket(var socket: DatagramSocket? = null) : IUdpSocket {
     override fun send(
         message: String,
         ipAddress: String,
-        port: String
+        port: String,
+        charset: Charset
     ) {
         if (socket == null) throw SocketNotOpenException()
-        val messageBytes = message.toByteArray()
+        val messageBytes = message.toByteArray(charset)
         val datagramPacket = DatagramPacket(
             messageBytes,
             messageBytes.size,
@@ -58,10 +61,9 @@ class UdpSocket(var socket: DatagramSocket? = null) : IUdpSocket {
     class SocketNotOpenException : Exception()
 
     override fun close() {
-        socket!!.close()
+        socket?.close()
+        socket = null
     }
 
 }
 
-fun toRGBUdpMessage(rgb: RGB) =
-    "{R: ${rgb.red}, G:${rgb.green}, B:${rgb.blue}}\n"

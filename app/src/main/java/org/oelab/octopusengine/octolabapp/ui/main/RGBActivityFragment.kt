@@ -6,11 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import com.jakewharton.rxbinding3.view.clicks
-import com.jakewharton.rxbinding3.widget.userChanges
+import com.jakewharton.rxbinding3.widget.changes
+import com.jakewharton.rxbinding3.widget.checkedChanges
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.exceptions.OnErrorNotImplementedException
 import io.reactivex.functions.Function3
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -20,9 +21,6 @@ import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
 
 
-/**
- * A placeholder fragment containing a simple view.
- */
 class RGBActivityFragment : androidx.fragment.app.Fragment() {
 
     override fun onCreateView(
@@ -32,24 +30,23 @@ class RGBActivityFragment : androidx.fragment.app.Fragment() {
         return inflater.inflate(R.layout.fragment_rgb, container, false)
     }
 
-    private val disposables = CompositeDisposable()
+    private val subscriptions = CompositeDisposable()
 
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onResume() {
+        super.onResume()
 
         val delayMillis = 2L
         val rgbEventSource: Observable<RGB> =
             Observable
                 .combineLatest(
-                    redSeekBar.userChanges().debounce(delayMillis, TimeUnit.MILLISECONDS),
-                    greenSeekBar.userChanges().debounce(delayMillis, TimeUnit.MILLISECONDS),
-                    blueSeekBar.userChanges().debounce(delayMillis, TimeUnit.MILLISECONDS),
+                    redSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
+                    greenSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
+                    blueSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
                     Function3 { red: Int, green: Int, blue: Int -> RGB(red, green, blue) })
                 .subscribeOn(AndroidSchedulers.mainThread())
 
-        val toggleConnectionEventSource = toggleConnectionButton
-            .clicks()
+        val checkFieldsAndToggleConnection = toggleConnectionButton
+            .checkedChanges()
             .subscribeOn(AndroidSchedulers.mainThread())
             .map {
                 ToggleConnectionEvent(
@@ -58,54 +55,88 @@ class RGBActivityFragment : androidx.fragment.app.Fragment() {
                     udpPortEditText.text.toString().trim()
                 )
             }
+            .doOnNext { event: ToggleConnectionEvent -> enableUdpFields(!event.buttonOn) }
             .observeOn(Schedulers.io())
             .compose(checkUdpFields())
             .publish()
 
-        toggleConnectionEventSource
+        checkFieldsAndToggleConnection
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribeBy(onNext = { model: CheckedUdpFieldsUIModel ->
-                if (!model.validIPAddress) udpIpAddressEditText.error =
+            .subscribeBy(
+                onNext = { model: CheckedUdpFieldsUIModel ->
+                    if (!model.validIPAddress) udpIpAddressEditText.error =
                         "Invalid IP address format xxx.xxx.xxx.xxx" else udpIpAddressEditText.error = null
-                if (!model.validPort) udpPortEditText.error =
+                    if (!model.validPort) udpPortEditText.error =
                         "Invalid port number 0-65535" else udpPortEditText.error = null
 
-                Log.d("subscribe model", "${Thread.currentThread()}")
-            }).addTo(disposables)
+                    if (model.toggleEvent.buttonOn && (!model.validIPAddress || !model.validPort)) toggleConnectionButton.isChecked =
+                        false
+
+                    Log.d("subscribe model", "${Thread.currentThread()}")
+                },
+                onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
+            ).addTo(subscriptions)
 
 
-        toggleConnectionEventSource
+        val socket = UdpSocket()
+
+        val broadcastRgbViaUdpEvent = checkFieldsAndToggleConnection
             .observeOn(Schedulers.io())
-            .compose(broadcastRgbViaUdp(rgbEventSource, UdpSocket()))
+            .filter { event -> event.toggleEvent.buttonOn }
+            .compose(broadcastRgbViaUdp(rgbEventSource, socket, Schedulers.io()))
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribeBy(onNext = { model: BroadcastRGBViaUdpUIModel ->
-                when {
-                    model.OpenSocketError -> {
-                        Toast.makeText(
-                            this.context,
-                            "Error! Connot open communication. Check permissions",
-                            Toast.LENGTH_LONG
-                        ).show()
+            .subscribeBy(
+                onNext = { model: BroadcastRGBViaUdpUIModel ->
+                    when {
+                        model.OpenSocketError -> {
+                            showMessage("Error! Connot open communication. Check permissions")
+                            toggleConnectionButton.isChecked = false
+                        }
+                        model.sendError -> {
+                            showMessage("Error cannot send data!")
+                        }
+                        model.openSocket -> {
+                            showMessage("UDP Socket opened.")
+                        }
                     }
-                    model.sendError -> {
-                        Toast.makeText(this.context, "Error cannot send data!", Toast.LENGTH_LONG).show()
-                    }
+                },
+                onError = { throwable -> throw OnErrorNotImplementedException(throwable) })
+            .addTo(subscriptions)
 
-                }
+        val closeSocketEvent = checkFieldsAndToggleConnection
+            .skip(1)
+            .observeOn(Schedulers.io())
+            .filter { event -> !event.toggleEvent.buttonOn }
+            .compose(closeSocket(socket, Schedulers.io()))
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy(
+                onNext = { model: CloseSocketUIModel ->
+                    showMessage("UDP Socket closed.")
+                },
+                onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
+            )
+            .addTo(subscriptions)
 
-            })
-            .addTo(disposables)
+        checkFieldsAndToggleConnection.connect().addTo(subscriptions)
+    }
 
+    private fun showMessage(message: String) {
+        Toast.makeText(
+            this.context,
+            message,
+            Toast.LENGTH_LONG
+        ).show()
+    }
 
-        toggleConnectionEventSource.connect().addTo(disposables)
-        Log.d("MAIN_THREAD", "${Thread.currentThread()}")
-
+    private fun enableUdpFields(enable: Boolean) {
+        udpIpAddressEditText.isEnabled = enable
+        udpPortEditText.isEnabled = enable
     }
 
 
     override fun onStop() {
         super.onStop()
-        disposables.clear()
+        subscriptions.clear()
     }
 }
 
