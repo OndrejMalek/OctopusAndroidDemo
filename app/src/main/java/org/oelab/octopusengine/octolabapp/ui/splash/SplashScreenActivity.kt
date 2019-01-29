@@ -24,7 +24,10 @@ class SplashScreenActivity : AppCompatActivity() {
         subscribe = Observable.just(Unit)
             .delay(800, TimeUnit.MILLISECONDS)
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribeBy (onNext = {this.startActivity(Intent(this,RGBActivity::class.java))})
+            .subscribeBy(onNext = {
+                this.startActivity(Intent(this, RGBActivity::class.java))
+                finish()
+            })
     }
 
     override fun onStop() {
