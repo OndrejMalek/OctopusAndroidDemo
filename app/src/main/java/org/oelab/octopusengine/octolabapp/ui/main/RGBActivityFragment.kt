@@ -82,39 +82,25 @@ class RGBActivityFragment : androidx.fragment.app.Fragment() {
 
         val broadcastRgbViaUdpEvent = checkFieldsAndToggleConnection
             .observeOn(Schedulers.io())
-            .filter { event -> event.toggleEvent.buttonOn }
             .compose(broadcastRgbViaUdp(rgbEventSource, socket, Schedulers.io()))
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
-                onNext = { model: BroadcastRGBViaUdpUIModel ->
-                    when {
-                        model.OpenSocketError -> {
+                onNext = { model: BroadcastModel ->
+                    when(model) {
+                        is OpenSocketErrorModel -> {
                             showMessage("Error! Connot open communication. Check permissions")
                             toggleConnectionButton.isChecked = false
                         }
-                        model.sendError -> {
+                        is SendErrorModel -> {
                             showMessage("Error cannot send data!")
                         }
-                        model.openSocket -> {
+                        is OpenSocketModel -> {
                             showMessage("UDP Socket opened.")
                         }
+                        is CloseSocketModel -> showMessage("UDP Socket closed.")
                     }
                 },
                 onError = { throwable -> throw OnErrorNotImplementedException(throwable) })
-            .addTo(subscriptions)
-
-        val closeSocketEvent = checkFieldsAndToggleConnection
-            .skip(1)
-            .observeOn(Schedulers.io())
-            .filter { event -> !event.toggleEvent.buttonOn }
-            .compose(closeSocket(socket, Schedulers.io()))
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribeBy(
-                onNext = { model: CloseSocketUIModel ->
-                    showMessage("UDP Socket closed.")
-                },
-                onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
-            )
             .addTo(subscriptions)
 
         checkFieldsAndToggleConnection.connect().addTo(subscriptions)

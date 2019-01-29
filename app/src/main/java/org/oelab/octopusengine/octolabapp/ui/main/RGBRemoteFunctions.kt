@@ -4,6 +4,7 @@ import io.reactivex.Observable
 import io.reactivex.ObservableSource
 import io.reactivex.ObservableTransformer
 import io.reactivex.Scheduler
+import io.reactivex.rxkotlin.cast
 
 fun checkUdpFields(): (Observable<ToggleConnectionEvent>) -> Observable<CheckedUdpFieldsUIModel> =
     { from ->
@@ -24,57 +25,76 @@ fun isValidPort(text: String): Boolean {
     return text.matches("""\d{1,5}""".toRegex()) && text.toInt() in 0..65535
 }
 
+data class OpenSocketErrorModel(val value: Unit = Unit) : BroadcastModel
+data class CloseSocketModel(val value: Unit = Unit) : BroadcastModel
+data class SendErrorModel(val value: Unit = Unit) : BroadcastModel
+
+
 fun broadcastRgbViaUdp(
     rgbEventSource: Observable<RGB>,
     socket: IUdpSocket,
     scheduler: Scheduler
-): (Observable<CheckedUdpFieldsUIModel>) -> Observable<BroadcastRGBViaUdpUIModel> =
+): (Observable<CheckedUdpFieldsUIModel>) -> Observable<BroadcastModel> =
     { from: Observable<CheckedUdpFieldsUIModel> ->
-        from.filter { checkedModel -> checkedModel.validIPAddress && checkedModel.validPort }
-            .flatMap { checkedModel ->
-                Observable.fromCallable {
-                    socket.open()
-                    BroadcastRGBViaUdpUIModel(
-                        openSocket = true
-                    )
+        val checkedFieldsEvent = from.observeOn(scheduler)
+            .share()
 
+        val buttonOffCloseSocketEvent = checkedFieldsEvent
+            .observeOn(scheduler)
+            .filter { !it.toggleEvent.buttonOn }
+            .map {
+                socket.close()
+                CloseSocketModel() as BroadcastModel
+            }.share()
+
+
+        val buttonOnOpenSocketEvent = checkedFieldsEvent
+            .observeOn(scheduler)
+            .filter { event -> event.toggleEvent.buttonOn }
+            .filter { checkedModel -> checkedModel.validIPAddress && checkedModel.validPort }
+            .map { checkedModel ->
+                socket.open()
+                OpenSocketModel(checkedModel = checkedModel) as BroadcastModel
+            }
+            .onErrorResumeNext(Observable.fromCallable {
+                socket.close()
+                OpenSocketErrorModel() as BroadcastModel
+            }).share()
+
+
+        val broadcastRgbViaUdp = Observable.merge(buttonOffCloseSocketEvent, buttonOnOpenSocketEvent)
+            .observeOn(scheduler)
+            .switchMap { broadcastModel ->
+                when (broadcastModel) {
+                    is OpenSocketModel -> {
+                        rgbEventSource
+                            .observeOn(scheduler)
+                            .map { rgb: RGB ->
+                                val message = sendRGB(rgb, socket, broadcastModel.checkedModel)
+                                SentRGBModel(
+                                    rgb = rgb,
+                                    message = message,
+                                    checkedModel = broadcastModel.checkedModel
+                                ) as BroadcastModel
+                            }
+                            .retry(3)
+                            .onErrorReturn {
+                                socket.close()
+                                SendErrorModel()
+                            }
+                    }
+                    is CloseSocketModel, is OpenSocketErrorModel -> Observable.empty<BroadcastModel>()
+                    else -> {
+                        Observable.empty<BroadcastModel>()
+                    }
                 }
-                    .subscribeOn(scheduler)
-                    .observeOn(scheduler)
-                    .onErrorReturn {
-                        socket.close()
-                        BroadcastRGBViaUdpUIModel(
-                            OpenSocketError = true
-                        )
-
-                    }
-                    .switchMap{ broadcastModel ->
-                        if (broadcastModel.OpenSocketError) {
-                            Observable.just(broadcastModel)
-
-                        } else {
-                            rgbEventSource
-                                .observeOn(scheduler)
-                                .map { rgb: RGB ->
-                                    val message = sendRGB(rgb, socket, checkedModel)
-                                    BroadcastRGBViaUdpUIModel(
-                                        rgb = rgb,
-                                        message = message,
-                                        displayToUI = false
-                                    )
-                                }
-                                .onErrorReturn {
-                                    BroadcastRGBViaUdpUIModel(
-                                        sendError = true
-                                    )
-                                }.startWith(broadcastModel)
-
-                        }
-
-                    }
 
             }
-            .filter { model: BroadcastRGBViaUdpUIModel -> model.displayToUI }
+
+
+        Observable.merge(buttonOnOpenSocketEvent, broadcastRgbViaUdp,buttonOffCloseSocketEvent)
+            .filter { model -> model !is SentRGBModel }
+            .cast()
     }
 
 fun sendRGB(
@@ -82,7 +102,7 @@ fun sendRGB(
     socket: IUdpSocket,
     checkedModel: CheckedUdpFieldsUIModel
 ): String {
-    val redMessage= "R${rgb.red}"
+    val redMessage = "R${rgb.red}"
     socket.send(
         message = redMessage,
         ipAddress = checkedModel.toggleEvent.ipAddress,

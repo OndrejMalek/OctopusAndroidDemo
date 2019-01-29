@@ -2,10 +2,13 @@ package org.oelab.octopusengine.octolabapp.ui.main
 
 import io.mockk.*
 import io.reactivex.Observable
-import io.reactivex.Observer
+import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.schedulers.TestScheduler
+import io.reactivex.subjects.BehaviorSubject
+import io.reactivex.subjects.Subject
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 class RGBActivityFragmentTest {
 
@@ -47,13 +50,23 @@ class RGBActivityFragmentTest {
     @Test
     fun broadcastRgbViaUdp_noError() {
         val socket = mockk<IUdpSocket>(relaxed = true)
+        val validCheckedModel = CheckedUdpFieldsUIModel(true, true, toggleOn)
+        val rgbEventSource = BehaviorSubject.create<RGB>()
+        val scheduler = Schedulers.trampoline()
+//        scheduler.advanceTimeBy(1, TimeUnit.SECONDS)
+        val subject = BehaviorSubject.create<CheckedUdpFieldsUIModel>()
 
-        Observable
-            .just(CheckedUdpFieldsUIModel(true, true, toggleOn))
-            .compose(broadcastRgbViaUdp(Observable.just(red, green), socket, Schedulers.trampoline()))
+        val test = subject
+            .compose(broadcastRgbViaUdp(rgbEventSource, socket, scheduler))
             .test()
-            .assertNoErrors()
-            .assertValues(BroadcastRGBViaUdpUIModel(openSocket = true))
+
+
+        test
+            .assertValues(
+                OpenSocketModel(
+                    checkedModel = validCheckedModel
+                )
+            )
             .assertOf { verify(exactly = 1) { socket.open() } }
             .assertOf {
                 verify(exactly = 2 * 3) {
@@ -61,10 +74,20 @@ class RGBActivityFragmentTest {
                         any(),
                         any(),
                         any(),
-                        Charsets.UTF_8
+                        any()
                     )
                 }
             }
+            .assertNoErrors()
+
+        assert(rgbEventSource.hasObservers())
+        rgbEventSource.onNext(red)
+        rgbEventSource.onNext(blue)
+        rgbEventSource.doOnSubscribe { print("rgbEventSource.doOnSubscribe") }
+        rgbEventSource.onComplete()
+
+        subject.onNext(validCheckedModel)
+        subject.onComplete()
     }
 
     private val blue = RGB(0, 0, 255)
@@ -82,30 +105,27 @@ class RGBActivityFragmentTest {
             .test()
             .assertNoErrors()
             .assertValues(
-                BroadcastRGBViaUdpUIModel(
-                    OpenSocketError = true
-                )
+                OpenSocketErrorModel()
             )
     }
 
     @Test
-    fun broadcastRgbViaUdp_withError_sendException() {
+    fun broadcastRgbViaUdp_withError_ExceptionOnSend() {
         val socket = mockk<IUdpSocket>(relaxed = true) {
             every { send(any(), any(), any(), any()) } throws Exception()
         }
 
+        val validCheckedModel = CheckedUdpFieldsUIModel(true, true, toggleOn)
         Observable
-            .just(CheckedUdpFieldsUIModel(true, true, toggleOn))
+            .just(validCheckedModel)
             .compose(broadcastRgbViaUdp(Observable.just(red, green, blue), socket, Schedulers.trampoline()))
             .test()
             .assertNoErrors()
             .assertValues(
-                BroadcastRGBViaUdpUIModel(
-                    openSocket = true
+                OpenSocketModel(
+                    checkedModel = validCheckedModel
                 ),
-                BroadcastRGBViaUdpUIModel(
-                    sendError = true
-                )
+                SendErrorModel()
             )
     }
 }
