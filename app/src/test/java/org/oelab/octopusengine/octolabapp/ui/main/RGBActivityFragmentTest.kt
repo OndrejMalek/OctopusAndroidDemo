@@ -1,14 +1,11 @@
 package org.oelab.octopusengine.octolabapp.ui.main
 
+import com.google.common.truth.Truth
 import io.mockk.*
 import io.reactivex.Observable
-import io.reactivex.observers.TestObserver
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.schedulers.TestScheduler
 import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.Subject
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
 class RGBActivityFragmentTest {
 
@@ -49,19 +46,17 @@ class RGBActivityFragmentTest {
 
     @Test
     fun broadcastRgbViaUdp_noError() {
-        val socket = mockk<IUdpSocket>(relaxed = true)
-        val validCheckedModel = CheckedUdpFieldsUIModel(true, true, toggleOn)
-        val rgbEventSource = BehaviorSubject.create<RGB>()
-        val scheduler = Schedulers.trampoline()
-//        scheduler.advanceTimeBy(1, TimeUnit.SECONDS)
-        val subject = BehaviorSubject.create<CheckedUdpFieldsUIModel>()
+        val socket = mockk<IUdpSocket>()
+        every { socket.open() }.just(Runs)
 
-        val test = subject
+        val validCheckedModel = CheckedUdpFieldsUIModel(true, true, toggleOn)
+        val rgbEventSource = Observable.just(red, blue)
+        val scheduler = Schedulers.trampoline()
+
+
+        Observable.just(validCheckedModel)
             .compose(broadcastRgbViaUdp(rgbEventSource, socket, scheduler))
             .test()
-
-
-        test
             .assertValues(
                 OpenSocketModel(
                     checkedModel = validCheckedModel
@@ -79,15 +74,6 @@ class RGBActivityFragmentTest {
                 }
             }
             .assertNoErrors()
-
-        assert(rgbEventSource.hasObservers())
-        rgbEventSource.onNext(red)
-        rgbEventSource.onNext(blue)
-        rgbEventSource.doOnSubscribe { print("rgbEventSource.doOnSubscribe") }
-        rgbEventSource.onComplete()
-
-        subject.onNext(validCheckedModel)
-        subject.onComplete()
     }
 
     private val blue = RGB(0, 0, 255)
@@ -127,5 +113,23 @@ class RGBActivityFragmentTest {
                 ),
                 SendErrorModel()
             )
+    }
+
+    @Test
+    fun name() {
+        val shared = Observable.just(1, 2, 3, 4).share()
+
+        var a: Int = 0
+        val share2 = shared.doOnNext {
+            print("shared: $it")
+            a = 10
+        }.share()
+
+        val end = share2.doOnNext {
+            a = 2
+        }
+
+        share2.subscribe()
+        Truth.assertThat(a).isEqualTo(2)
     }
 }

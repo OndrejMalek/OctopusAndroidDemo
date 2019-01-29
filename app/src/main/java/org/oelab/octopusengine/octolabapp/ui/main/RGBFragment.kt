@@ -21,7 +21,7 @@ import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
 
 
-class RGBActivityFragment : androidx.fragment.app.Fragment() {
+class RGBFragment : androidx.fragment.app.Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

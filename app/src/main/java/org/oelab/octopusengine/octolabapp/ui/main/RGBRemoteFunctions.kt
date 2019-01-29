@@ -1,8 +1,6 @@
 package org.oelab.octopusengine.octolabapp.ui.main
 
 import io.reactivex.Observable
-import io.reactivex.ObservableSource
-import io.reactivex.ObservableTransformer
 import io.reactivex.Scheduler
 import io.reactivex.rxkotlin.cast
 
@@ -25,10 +23,22 @@ fun isValidPort(text: String): Boolean {
     return text.matches("""\d{1,5}""".toRegex()) && text.toInt() in 0..65535
 }
 
+interface BroadcastModel
 data class OpenSocketErrorModel(val value: Unit = Unit) : BroadcastModel
 data class CloseSocketModel(val value: Unit = Unit) : BroadcastModel
 data class SendErrorModel(val value: Unit = Unit) : BroadcastModel
+data class OpenSocketModel(val checkedModel: CheckedUdpFieldsUIModel) : BroadcastModel
+data class SentRGBModel(
+    val rgb: RGB? = RGB(),
+    val message: String = "",
+    val checkedModel: CheckedUdpFieldsUIModel? = null
+) : BroadcastModel
 
+data class CheckedUdpFieldsUIModel(
+    val validIPAddress: Boolean = false,
+    val validPort: Boolean = false,
+    val toggleEvent: ToggleConnectionEvent = ToggleConnectionEvent()
+)
 
 fun broadcastRgbViaUdp(
     rgbEventSource: Observable<RGB>,
@@ -42,6 +52,7 @@ fun broadcastRgbViaUdp(
         val buttonOffCloseSocketEvent = checkedFieldsEvent
             .observeOn(scheduler)
             .filter { !it.toggleEvent.buttonOn }
+            .skip(1L)
             .map {
                 socket.close()
                 CloseSocketModel() as BroadcastModel
@@ -91,8 +102,7 @@ fun broadcastRgbViaUdp(
 
             }
 
-
-        Observable.merge(buttonOnOpenSocketEvent, broadcastRgbViaUdp,buttonOffCloseSocketEvent)
+        Observable.merge(buttonOnOpenSocketEvent, broadcastRgbViaUdp, buttonOffCloseSocketEvent)
             .filter { model -> model !is SentRGBModel }
             .cast()
     }
@@ -125,20 +135,5 @@ fun sendRGB(
     )
 
     return redMessage + greenMessage + blueMessage
-}
-
-fun closeSocket(
-    socket: IUdpSocket,
-    scheduler: Scheduler
-): ObservableTransformer<CheckedUdpFieldsUIModel, CloseSocketUIModel> {
-    return object : ObservableTransformer<CheckedUdpFieldsUIModel, CloseSocketUIModel> {
-        override fun apply(upstream: Observable<CheckedUdpFieldsUIModel>): ObservableSource<CloseSocketUIModel> {
-            return upstream
-                .map {
-                    socket.close()
-                    CloseSocketUIModel()
-                }
-        }
-    }
 }
 
