@@ -4,8 +4,8 @@ import com.google.common.truth.Truth
 import io.mockk.*
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.BehaviorSubject
 import org.junit.Test
+import org.oelab.octopusengine.octolabapp.ui.rgb.*
 
 class RGBActivityFragmentTest {
 
@@ -87,7 +87,13 @@ class RGBActivityFragmentTest {
 
         Observable
             .just(CheckedUdpFieldsUIModel(true, true, toggleOn))
-            .compose(broadcastRgbViaUdp(Observable.just(red, green, blue), socket, Schedulers.trampoline()))
+            .compose(
+                broadcastRgbViaUdp(
+                    Observable.just(red, green, blue),
+                    socket,
+                    Schedulers.trampoline()
+                )
+            )
             .test()
             .assertNoErrors()
             .assertValues(
@@ -104,7 +110,13 @@ class RGBActivityFragmentTest {
         val validCheckedModel = CheckedUdpFieldsUIModel(true, true, toggleOn)
         Observable
             .just(validCheckedModel)
-            .compose(broadcastRgbViaUdp(Observable.just(red, green, blue), socket, Schedulers.trampoline()))
+            .compose(
+                broadcastRgbViaUdp(
+                    Observable.just(red, green, blue),
+                    socket,
+                    Schedulers.trampoline()
+                )
+            )
             .test()
             .assertNoErrors()
             .assertValues(

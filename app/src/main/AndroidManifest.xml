@@ -14,7 +14,7 @@
             android:label="@string/app_name"
             android:roundIcon="@mipmap/ic_launcher_round"
             android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name="org.oelab.octopusengine.octolabapp.ui.splash.MainActivity">
             <!--<intent-filter>-->
                 <!--<action android:name="android.intent.action.MAIN"/>-->
 
@@ -22,7 +22,7 @@
             <!--</intent-filter>-->
         </activity>
         <activity
-                android:name=".ui.main.RGBActivity"
+                android:name="org.oelab.octopusengine.octolabapp.ui.rgb.RGBActivity"
                 android:label="@string/title_activity_rgb"
                 android:theme="@style/AppTheme.NoActionBar">
             <intent-filter android:label="@string/app_name">

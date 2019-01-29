@@ -1,4 +1,4 @@
-package org.oelab.octopusengine.octolabapp.ui.main
+package org.oelab.octopusengine.octolabapp.ui.splash
 
 import androidx.lifecycle.ViewModel
 

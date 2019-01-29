@@ -1,8 +1,8 @@
-package org.oelab.octopusengine.octolabapp
+package org.oelab.octopusengine.octolabapp.ui.splash
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import org.oelab.octopusengine.octolabapp.ui.main.MainFragment
+import org.oelab.octopusengine.octolabapp.R
 
 class MainActivity : AppCompatActivity() {
 
