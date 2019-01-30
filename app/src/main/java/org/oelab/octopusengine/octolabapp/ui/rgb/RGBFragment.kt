@@ -1,14 +1,11 @@
 package org.oelab.octopusengine.octolabapp.ui.rgb
 
-import android.annotation.SuppressLint
 import android.os.Bundle
-import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.text.HtmlCompat
 import com.jakewharton.rxbinding3.widget.changes
 import com.jakewharton.rxbinding3.widget.checkedChanges
 import io.reactivex.Observable
@@ -19,6 +16,7 @@ import io.reactivex.functions.Function3
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
+import kotlinx.android.synthetic.main.activity_rgb.*
 import kotlinx.android.synthetic.main.fragment_rgb.*
 import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
@@ -30,14 +28,18 @@ class RGBFragment : androidx.fragment.app.Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_rgb, container, false)
+        val view = inflater.inflate(R.layout.fragment_rgb, container, false)
+
+        return view
     }
 
-    @SuppressLint("ResourceType")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         guideTextView.setHtml(R.raw.rgb_guide)
+
+
+
     }
 
     private val subscriptions = CompositeDisposable()
