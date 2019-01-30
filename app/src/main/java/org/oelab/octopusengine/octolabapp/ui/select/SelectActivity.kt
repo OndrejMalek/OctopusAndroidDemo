@@ -16,7 +16,7 @@ class SelectActivity : AppCompatActivity() {
         setContentView(R.layout.activity_select)
         setSupportActionBar(toolbar)
 
-        RGBCardView.setOnClickListener {
+        rgbCardView.setOnClickListener {
             startActivity(Intent(this,RGBActivity::class.java))
         }
     }

@@ -42,7 +42,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/textView3" app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:contentPadding="20dp"
-                app:layout_constraintHorizontal_bias="0.0" android:id="@+id/RGBCardView"
+                app:layout_constraintHorizontal_bias="0.0" android:id="@+id/rgbCardView"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?attr/selectableItemBackground"
