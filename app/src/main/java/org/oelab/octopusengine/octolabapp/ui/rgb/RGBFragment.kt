@@ -1,11 +1,14 @@
 package org.oelab.octopusengine.octolabapp.ui.rgb
 
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.text.HtmlCompat
 import com.jakewharton.rxbinding3.widget.changes
 import com.jakewharton.rxbinding3.widget.checkedChanges
 import io.reactivex.Observable
@@ -28,6 +31,13 @@ class RGBFragment : androidx.fragment.app.Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_rgb, container, false)
+    }
+
+    @SuppressLint("ResourceType")
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        guideTextView.setHtml(R.raw.rgb_guide)
     }
 
     private val subscriptions = CompositeDisposable()
