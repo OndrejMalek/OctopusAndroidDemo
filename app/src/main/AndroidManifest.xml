@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools" package="org.oelab.octopusengine.octolabapp">
+          xmlns:tools="http://schemas.android.com/tools"
+          package="org.oelab.octopusengine.octolabapp">
+
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
-
 
     <application
             android:allowBackup="true"
@@ -15,7 +16,7 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:theme="@style/AppTheme"
             tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name="org.oelab.octopusengine.octolabapp.ui.splash.SplashScreenActivity">
+        <activity android:name=".ui.splash.SplashScreenActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -23,9 +24,14 @@
             </intent-filter>
         </activity>
         <activity
-                android:name="org.oelab.octopusengine.octolabapp.ui.rgb.RGBActivity"
+                android:name=".ui.rgb.RGBActivity"
                 android:label="@string/title_activity_rgb"
                 android:theme="@style/AppTheme.NoActionBar">
+        </activity>
+        <activity
+                android:name=".ui.select.SelectActivity"
+                android:label="@string/title_activity_select"
+                android:theme="@style/AppTheme">
         </activity>
     </application>
 
