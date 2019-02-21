@@ -4,7 +4,8 @@
       tools:context=".ui.rgb.RGBActivity">
     <item
             android:id="@+id/menuHelp"
-            android:title="Help"
+            android:title="@string/help"
             android:orderInCategory="100"
-            app:showAsAction="never|ifRoom"/>
+            app:showAsAction="never|ifRoom"
+            android:icon="@android:drawable/ic_menu_help"/>
 </menu>

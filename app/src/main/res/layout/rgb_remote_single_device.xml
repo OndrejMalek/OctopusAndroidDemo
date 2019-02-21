@@ -9,7 +9,10 @@
         app:cardElevation="4dp"
         app:cardCornerRadius="4dp"
         app:cardMaxElevation="4dp"
-        android:layout_margin="4dp"
+        android:layout_marginTop="0dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:layout_marginBottom="4dp"
         app:cardUseCompatPadding="true"
         >
 
@@ -71,19 +74,18 @@
 
         <TextView
                 android:text="@string/send_color"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:id="@+id/textView"
-                android:layout_marginTop="8dp"
-                app:layout_constraintTop_toBottomOf="@+id/brightnessSlide"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/toggleConnectionButton"
+                app:layout_constraintBottom_toBottomOf="@+id/toggleConnectionButton"
+                app:layout_constraintEnd_toStartOf="@+id/toggleConnectionButton"
                 android:layout_marginEnd="8dp"
-                app:layout_constraintStart_toEndOf="@+id/colorPickerView"
-                android:layout_marginStart="8dp"/>
+                app:layout_constraintStart_toStartOf="@+id/brightnessSlide"/>
 
         <ToggleButton
                 android:id="@+id/toggleConnectionButton"
-                android:layout_width="88dp"
+                android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:switchMinWidth="80dp"
                 android:textOn="@string/on"
@@ -91,10 +93,8 @@
                 android:switchPadding="19dp"
                 android:thumbTextPadding="4dp"
                 android:showText="true"
-                android:layout_marginTop="8dp"
-                app:layout_constraintTop_toBottomOf="@+id/textView"
-                app:layout_constraintStart_toStartOf="@+id/textView"
-                app:layout_constraintEnd_toEndOf="@+id/textView"/>
+                app:layout_constraintEnd_toEndOf="@+id/udpIpAddressEditText"
+                app:layout_constraintBottom_toBottomOf="@+id/colorPickerView"/>
 
 
         <com.skydoves.colorpickerview.ColorPickerView
@@ -114,20 +114,21 @@
         <com.skydoves.colorpickerview.sliders.BrightnessSlideBar
                 android:id="@+id/brightnessSlide"
                 android:layout_width="0dp"
-                android:layout_height="20dp"
+                android:layout_height="28dp"
                 android:layout_margin="15dp"
 
 
-                app:borderColor_BrightnessSlider="@android:color/darker_gray"
+                app:borderColor_BrightnessSlider="@android:color/transparent"
                 app:borderSize_BrightnessSlider="5"
                 app:selector_BrightnessSlider="@drawable/wheel"
                 android:orientation="vertical"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 app:layout_constraintTop_toTopOf="@+id/colorPickerView"
                 app:layout_constraintStart_toEndOf="@+id/colorPickerView"
                 android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"/>
 
         <com.skydoves.colorpickerview.sliders.AlphaSlideBar
                 android:id="@+id/alphaSlideBar"
@@ -135,9 +136,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="15dp"
-                app:borderColor_AlphaSlideBar="@android:color/darker_gray"
+                app:borderColor_AlphaSlideBar="@android:color/transparent"
                 app:borderSize_AlphaSlideBar="5"
-                app:selector_AlphaSlideBar="@drawable/wheel" />
+                app:selector_AlphaSlideBar="@drawable/wheel"/>
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

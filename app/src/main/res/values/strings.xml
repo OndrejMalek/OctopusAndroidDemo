@@ -13,4 +13,5 @@
     <string name="_4000_defaultPort">4000</string>
     <string name="on">on</string>
     <string name="off">off</string>
+    <string name="help">Help</string>
 </resources>

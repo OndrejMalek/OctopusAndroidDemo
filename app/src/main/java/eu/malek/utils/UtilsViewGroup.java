@@ -1,6 +1,7 @@
 package eu.malek.utils;
 
 import android.graphics.Rect;
+import android.os.Handler;
 import android.text.Editable;
 import android.view.View;
 import android.view.ViewGroup;
@@ -363,5 +364,17 @@ public class UtilsViewGroup {
             child.setFocusable(enable);
             child.setFocusableInTouchMode(enable);
         }
+    }
+
+    public static void smoothScrollToViewBottom(final NestedScrollView scrollView, final View view) {
+        view.requestFocus();
+        scrollView.setSmoothScrollingEnabled(true);
+
+        new Handler().post(new Runnable() {
+            @Override
+            public void run() {
+                scrollView.smoothScrollTo(0, view.getBottom());
+            }
+        });
     }
 }

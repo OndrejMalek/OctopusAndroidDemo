@@ -1,7 +1,9 @@
 package org.oelab.octopusengine.octolabapp.ui.rgb
 
 import android.content.Context
+import android.graphics.Rect
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.*
 import android.widget.*
@@ -27,6 +29,9 @@ import kotlinx.android.synthetic.main.rgb_remote_single_device.*
 import kotlinx.android.synthetic.main.rgb_remote_single_device.view.*
 import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
+import androidx.core.widget.NestedScrollView
+import eu.malek.utils.UtilsView
+import eu.malek.utils.UtilsViewGroup
 
 
 class RGBFragment : androidx.fragment.app.Fragment() {
@@ -48,7 +53,10 @@ class RGBFragment : androidx.fragment.app.Fragment() {
         floating_action_button.clicks().subscribeBy(
             onNext = {
                 addRgbDeviceLayout(contentLinearLayout, this.context)
-                    .doOnLayout {  scrollView.fullScroll(View.FOCUS_DOWN)}
+                    .doOnLayout {  view ->
+
+                        UtilsViewGroup.smoothScrollToViewBottom(scrollView,view)
+                    }
             },
             onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
         ).addTo(subscriptions)
@@ -57,6 +65,8 @@ class RGBFragment : androidx.fragment.app.Fragment() {
 
         this.setHasOptionsMenu(true)
     }
+
+
 
     private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
         val view = View.inflate(context, R.layout.rgb_remote_single_device, null)
