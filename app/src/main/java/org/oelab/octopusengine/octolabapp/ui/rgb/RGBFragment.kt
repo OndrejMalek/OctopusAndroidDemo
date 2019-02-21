@@ -2,10 +2,10 @@ package org.oelab.octopusengine.octolabapp.ui.rgb
 
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import com.jakewharton.rxbinding3.view.clicks
 import com.jakewharton.rxbinding3.widget.changes
 import com.jakewharton.rxbinding3.widget.checkedChanges
 import io.reactivex.Observable
@@ -16,8 +16,8 @@ import io.reactivex.functions.Function3
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import kotlinx.android.synthetic.main.activity_rgb.*
 import kotlinx.android.synthetic.main.fragment_rgb.*
+import kotlinx.android.synthetic.main.rgb_help_dialog.view.*
 import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
 
@@ -28,18 +28,7 @@ class RGBFragment : androidx.fragment.app.Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_rgb, container, false)
-
-        return view
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        guideTextView.setHtml(R.raw.rgb_guide)
-
-
-
+        return inflater.inflate(R.layout.fragment_rgb, container, false)
     }
 
     private val subscriptions = CompositeDisposable()
@@ -122,7 +111,50 @@ class RGBFragment : androidx.fragment.app.Fragment() {
             .addTo(subscriptions)
 
         checkFieldsAndToggleConnection.connect().addTo(subscriptions)
+
+        addDeviceButton.clicks()
+            .subscribeBy(onNext = {},
+                onError = {throwable -> throw OnErrorNotImplementedException(throwable) })
+            .addTo(subscriptions)
+
+
+        floating_action_button.clicks().subscribeBy(
+            onNext = { },
+            onError = {throwable -> throw OnErrorNotImplementedException(throwable) }).addTo(subscriptions)
+
+        this.setHasOptionsMenu(true)
     }
+
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.menu_rgb, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.menuHelp -> showHelp()
+        }
+        return true
+    }
+
+    private fun showHelp() {
+
+        val view = this.layoutInflater.inflate(R.layout.rgb_help_dialog, null)
+        view.htmlHelpText.setHtml(R.raw.rgb_guide)
+
+        val alertDialog = AlertDialog.Builder(this.context!!)
+            .setCancelable(true)
+            .setTitle("Help")
+            .setView(view)
+            .create()
+
+        view.okButton.setOnClickListener { alertDialog.dismiss() }
+
+        alertDialog
+            .show()
+    }
+
 
     private fun showMessage(message: String) {
         Toast.makeText(

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent">
+
+    <LinearLayout
+
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp">
+
+        <org.sufficientlysecure.htmltextview.HtmlTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:id="@+id/htmlHelpText"
+                tools:text="Help Text"/>
+
+        <Button
+                android:text="@string/ok"
+                android:layout_gravity="end"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/okButton"/>
+
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
