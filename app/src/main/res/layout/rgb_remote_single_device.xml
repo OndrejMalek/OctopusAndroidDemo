@@ -100,7 +100,7 @@
         <com.skydoves.colorpickerview.ColorPickerView
                 android:id="@+id/colorPickerView"
                 android:layout_width="163dp"
-                android:layout_height="141dp"
+                android:layout_height="144dp"
                 android:layout_gravity="center"
                 app:alpha_flag="1"
                 app:palette="@drawable/palette"

@@ -29,8 +29,6 @@ import kotlinx.android.synthetic.main.rgb_remote_single_device.*
 import kotlinx.android.synthetic.main.rgb_remote_single_device.view.*
 import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
-import androidx.core.widget.NestedScrollView
-import eu.malek.utils.UtilsView
 import eu.malek.utils.UtilsViewGroup
 
 
@@ -47,6 +45,7 @@ class RGBFragment : androidx.fragment.app.Fragment() {
 
     override fun onResume() {
         super.onResume()
+        this.setHasOptionsMenu(true)
 
         addRgbDeviceLayout(contentLinearLayout, this.context)
 
@@ -54,16 +53,12 @@ class RGBFragment : androidx.fragment.app.Fragment() {
             onNext = {
                 addRgbDeviceLayout(contentLinearLayout, this.context)
                     .doOnLayout {  view ->
-
                         UtilsViewGroup.smoothScrollToViewBottom(scrollView,view)
                     }
             },
             onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
         ).addTo(subscriptions)
 
-
-
-        this.setHasOptionsMenu(true)
     }
 
 
@@ -84,7 +79,7 @@ class RGBFragment : androidx.fragment.app.Fragment() {
         return view
     }
 
-    private fun subscribeRGBDeviceLayout(
+    fun subscribeRGBDeviceLayout(
         toggleConnectionButton: ToggleButton,
         udpIpAddressEditText: EditText,
         udpPortEditText: EditText,
@@ -93,7 +88,6 @@ class RGBFragment : androidx.fragment.app.Fragment() {
         alphaSlideBar: AlphaSlideBar
     ) {
 
-//        colorPickerView.setFlagView(CustomFlag(this, R.layout.layout_flag))
         val rgbEventSubject = BehaviorSubject.create<RGB>()
 
         colorPickerView.setOnTouchListener(DisableScrollOnTouchListener(colorPickerView))
