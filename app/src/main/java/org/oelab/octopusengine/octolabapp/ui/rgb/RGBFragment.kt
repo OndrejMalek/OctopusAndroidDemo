@@ -3,6 +3,9 @@ package org.oelab.octopusengine.octolabapp.ui.rgb
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.EditText
+import android.widget.SeekBar
+import android.widget.Switch
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.jakewharton.rxbinding3.view.clicks
@@ -36,12 +39,37 @@ class RGBFragment : androidx.fragment.app.Fragment() {
     override fun onResume() {
         super.onResume()
 
+        subs(
+            redSeekBar,
+            greenSeekBar,
+            blueSeekBar,
+            toggleConnectionButton,
+            udpIpAddressEditText,
+            udpPortEditText
+        )
+
+
+        floating_action_button.clicks().subscribeBy(
+            onNext = { },
+            onError = {throwable -> throw OnErrorNotImplementedException(throwable) }).addTo(subscriptions)
+
+        this.setHasOptionsMenu(true)
+    }
+
+    private fun subs(
+        redSeekBar: SeekBar,
+        greeSeekBar: SeekBar,
+        blueSeekBar: SeekBar,
+        toggleConnectionButton: Switch,
+        udpIpAddressEditText: EditText,
+        udpPortEditText: EditText
+    ) {
         val delayMillis = 2L
         val rgbEventSource: Observable<RGB> =
             Observable
                 .combineLatest(
                     redSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
-                    greenSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
+                    greeSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
                     blueSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
                     Function3 { red: Int, green: Int, blue: Int ->
                         RGB(
@@ -93,7 +121,7 @@ class RGBFragment : androidx.fragment.app.Fragment() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
                 onNext = { model: BroadcastModel ->
-                    when(model) {
+                    when (model) {
                         is OpenSocketErrorModel -> {
                             showMessage("Error! Connot open communication. Check permissions")
                             toggleConnectionButton.isChecked = false
@@ -111,18 +139,6 @@ class RGBFragment : androidx.fragment.app.Fragment() {
             .addTo(subscriptions)
 
         checkFieldsAndToggleConnection.connect().addTo(subscriptions)
-
-        addDeviceButton.clicks()
-            .subscribeBy(onNext = {},
-                onError = {throwable -> throw OnErrorNotImplementedException(throwable) })
-            .addTo(subscriptions)
-
-
-        floating_action_button.clicks().subscribeBy(
-            onNext = { },
-            onError = {throwable -> throw OnErrorNotImplementedException(throwable) }).addTo(subscriptions)
-
-        this.setHasOptionsMenu(true)
     }
 
 
