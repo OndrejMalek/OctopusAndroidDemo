@@ -1,4 +1,4 @@
-package eu.malek.android;
+package eu.malek.utils;
 
 import android.content.Context;
 import android.os.Build;

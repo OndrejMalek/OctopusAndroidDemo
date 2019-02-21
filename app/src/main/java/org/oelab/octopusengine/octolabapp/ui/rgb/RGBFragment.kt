@@ -8,16 +8,19 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.doOnLayout
 import com.jakewharton.rxbinding3.view.clicks
-import com.jakewharton.rxbinding3.widget.changes
 import com.jakewharton.rxbinding3.widget.checkedChanges
-import io.reactivex.Observable
+import com.skydoves.colorpickerview.ColorPickerView
+import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
+import com.skydoves.colorpickerview.sliders.AlphaSlideBar
+import com.skydoves.colorpickerview.sliders.BrightnessSlideBar
+import eu.malek.utils.DisableScrollOnTouchListener
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.exceptions.OnErrorNotImplementedException
-import io.reactivex.functions.Function3
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
+import io.reactivex.subjects.BehaviorSubject
 import kotlinx.android.synthetic.main.fragment_rgb.*
 import kotlinx.android.synthetic.main.rgb_help_dialog.view.*
 import kotlinx.android.synthetic.main.rgb_remote_single_device.*
@@ -50,47 +53,59 @@ class RGBFragment : androidx.fragment.app.Fragment() {
             onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
         ).addTo(subscriptions)
 
+
+
         this.setHasOptionsMenu(true)
     }
 
     private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
         val view = View.inflate(context, R.layout.rgb_remote_single_device, null)
         linearLayout.addView(view)
+
         subscribeRGBDeviceLayout(
-            view.redSeekBar,
-            view.greenSeekBar,
-            view.blueSeekBar,
             view.toggleConnectionButton,
             view.udpIpAddressEditText,
-            view.udpPortEditText
+            view.udpPortEditText,
+            view.colorPickerView,
+            view.brightnessSlide,
+            view.alphaSlideBar
         )
 
         return view
     }
 
     private fun subscribeRGBDeviceLayout(
-        redSeekBar: SeekBar,
-        greenSeekBar: SeekBar,
-        blueSeekBar: SeekBar,
         toggleConnectionButton: ToggleButton,
         udpIpAddressEditText: EditText,
-        udpPortEditText: EditText
+        udpPortEditText: EditText,
+        colorPickerView: ColorPickerView,
+        brightnessSlideBar: BrightnessSlideBar,
+        alphaSlideBar: AlphaSlideBar
     ) {
-        val delayMillis = 2L
-        val rgbEventSource: Observable<RGB> =
-            Observable
-                .combineLatest(
-                    redSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
-                    greenSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
-                    blueSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
-                    Function3 { red: Int, green: Int, blue: Int ->
-                        RGB(
-                            red,
-                            green,
-                            blue
-                        )
-                    })
-                .subscribeOn(AndroidSchedulers.mainThread())
+
+//        colorPickerView.setFlagView(CustomFlag(this, R.layout.layout_flag))
+        val rgbEventSubject = BehaviorSubject.create<RGB>()
+
+        colorPickerView.setOnTouchListener(DisableScrollOnTouchListener(colorPickerView))
+        colorPickerView.attachBrightnessSlider(brightnessSlideBar)
+        brightnessSlideBar.setOnTouchListener(DisableScrollOnTouchListener(brightnessSlideBar))
+        colorPickerView.attachAlphaSlider(alphaSlideBar) // not used but crashes without
+        colorPickerView.setLifecycleOwner(this)
+        colorPickerView.setColorListener(
+            ColorEnvelopeListener { envelope, fromUser ->
+                rgbEventSubject.onNext(
+                    RGB(
+                        envelope.argb[1],
+                        envelope.argb[2],
+                        envelope.argb[3]
+                    )
+                )
+            })
+
+        val rgbEventSource = rgbEventSubject.debounce(2L,TimeUnit.MILLISECONDS,Schedulers.computation())
+
+
+
 
         val checkFieldsAndToggleConnection = toggleConnectionButton
             .checkedChanges()

@@ -53,4 +53,6 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.8.1'
     implementation 'nl.littlerobots.rxlint:rxlint:1.7.2'
     implementation 'org.sufficientlysecure:html-textview:3.6'
+
+    implementation "com.github.skydoves:colorpickerview:2.1.0"
 }
