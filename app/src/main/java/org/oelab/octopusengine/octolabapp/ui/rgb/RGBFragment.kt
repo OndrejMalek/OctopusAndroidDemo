@@ -1,13 +1,12 @@
 package org.oelab.octopusengine.octolabapp.ui.rgb
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.*
-import android.widget.EditText
-import android.widget.SeekBar
-import android.widget.Switch
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.doOnLayout
 import com.jakewharton.rxbinding3.view.clicks
 import com.jakewharton.rxbinding3.widget.changes
 import com.jakewharton.rxbinding3.widget.checkedChanges
@@ -22,6 +21,7 @@ import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_rgb.*
 import kotlinx.android.synthetic.main.rgb_help_dialog.view.*
 import kotlinx.android.synthetic.main.rgb_remote_single_device.*
+import kotlinx.android.synthetic.main.rgb_remote_single_device.view.*
 import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
 
@@ -40,29 +40,39 @@ class RGBFragment : androidx.fragment.app.Fragment() {
     override fun onResume() {
         super.onResume()
 
-        subs(
-            redSeekBar,
-            greenSeekBar,
-            blueSeekBar,
-            toggleConnectionButton,
-            udpIpAddressEditText,
-            udpPortEditText
-        )
-
+        addRgbDeviceLayout(contentLinearLayout, this.context)
 
         floating_action_button.clicks().subscribeBy(
-            onNext = { },
-            onError = {throwable -> throw OnErrorNotImplementedException(throwable) }
+            onNext = {
+                addRgbDeviceLayout(contentLinearLayout, this.context)
+                    .doOnLayout {  scrollView.fullScroll(View.FOCUS_DOWN)}
+            },
+            onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
         ).addTo(subscriptions)
 
         this.setHasOptionsMenu(true)
     }
 
-    private fun subs(
+    private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
+        val view = View.inflate(context, R.layout.rgb_remote_single_device, null)
+        linearLayout.addView(view)
+        subscribeRGBDeviceLayout(
+            view.redSeekBar,
+            view.greenSeekBar,
+            view.blueSeekBar,
+            view.toggleConnectionButton,
+            view.udpIpAddressEditText,
+            view.udpPortEditText
+        )
+
+        return view
+    }
+
+    private fun subscribeRGBDeviceLayout(
         redSeekBar: SeekBar,
-        greeSeekBar: SeekBar,
+        greenSeekBar: SeekBar,
         blueSeekBar: SeekBar,
-        toggleConnectionButton: Switch,
+        toggleConnectionButton: ToggleButton,
         udpIpAddressEditText: EditText,
         udpPortEditText: EditText
     ) {
@@ -71,7 +81,7 @@ class RGBFragment : androidx.fragment.app.Fragment() {
             Observable
                 .combineLatest(
                     redSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
-                    greeSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
+                    greenSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
                     blueSeekBar.changes().debounce(delayMillis, TimeUnit.MILLISECONDS),
                     Function3 { red: Int, green: Int, blue: Int ->
                         RGB(

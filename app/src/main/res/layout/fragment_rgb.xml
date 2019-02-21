@@ -3,32 +3,32 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         >
 
     <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
                                            xmlns:app="http://schemas.android.com/apk/res-auto"
                                            xmlns:tools="http://schemas.android.com/tools"
+                                           android:id="@+id/scrollView"
                                            android:layout_width="match_parent"
                                            android:layout_height="match_parent"
-                                           tools:context=".ui.rgb.RGBFragment"
-                                           tools:showIn="@layout/activity_rgb">
+                                           tools:context=".ui.rgb.RGBFragment">
 
         <LinearLayout
+                android:id="@+id/outerLinearLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-            <include
-                    layout="@layout/rgb_remote_single_device"
-                    android:id="@+id/c1"/>
+            <LinearLayout
+                    android:id="@+id/contentLinearLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
 
-
-            <include
-                    layout="@layout/rgb_remote_single_device"
-                    android:id="@+id/c2"/>
+            </LinearLayout>
 
 
             <View
@@ -38,6 +38,8 @@
                     />
 
         </LinearLayout>
+
+
     </androidx.core.widget.NestedScrollView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

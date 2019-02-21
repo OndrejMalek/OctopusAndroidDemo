@@ -4,4 +4,13 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_select">Select Demo</string>
     <string name="ok">OK</string>
+    <string name="send_color">Send Color</string>
+    <string name="ip_address">IP Address</string>
+    <string name="_192_168_x_x">192.168.x.x</string>
+    <string name="_192_168_5_105_default_val">192.168.5.105</string>
+    <string name="port">Port</string>
+    <string name="xxxxx_hint">xxxxx</string>
+    <string name="_4000_defaultPort">4000</string>
+    <string name="on">on</string>
+    <string name="off">off</string>
 </resources>
