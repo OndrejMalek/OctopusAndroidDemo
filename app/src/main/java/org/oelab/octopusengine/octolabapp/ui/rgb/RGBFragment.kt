@@ -21,6 +21,7 @@ import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.fragment_rgb.*
 import kotlinx.android.synthetic.main.rgb_help_dialog.view.*
+import kotlinx.android.synthetic.main.rgb_remote_single_device.*
 import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
 
@@ -51,7 +52,8 @@ class RGBFragment : androidx.fragment.app.Fragment() {
 
         floating_action_button.clicks().subscribeBy(
             onNext = { },
-            onError = {throwable -> throw OnErrorNotImplementedException(throwable) }).addTo(subscriptions)
+            onError = {throwable -> throw OnErrorNotImplementedException(throwable) }
+        ).addTo(subscriptions)
 
         this.setHasOptionsMenu(true)
     }
