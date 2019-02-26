@@ -24,7 +24,6 @@ android {
             applicationIdSuffix = ".debug"
             debuggable true
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
     buildToolsVersion '28.0.3'
