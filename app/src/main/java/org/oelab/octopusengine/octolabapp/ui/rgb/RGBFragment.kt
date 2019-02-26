@@ -108,9 +108,6 @@ class RGBFragment : androidx.fragment.app.Fragment() {
 
         val rgbEventSource = rgbEventSubject.debounce(2L,TimeUnit.MILLISECONDS,Schedulers.computation())
 
-
-
-
         val checkFieldsAndToggleConnection = toggleConnectionButton
             .checkedChanges()
             .subscribeOn(AndroidSchedulers.mainThread())
@@ -186,7 +183,6 @@ class RGBFragment : androidx.fragment.app.Fragment() {
     }
 
     private fun showHelp() {
-
         val view = this.layoutInflater.inflate(R.layout.rgb_help_dialog, null)
         view.htmlHelpText.setHtml(R.raw.rgb_guide)
 
