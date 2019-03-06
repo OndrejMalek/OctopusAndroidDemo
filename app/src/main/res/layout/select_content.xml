@@ -75,7 +75,7 @@
                 >
 
             <TextView
-                    android:text="...Next Coming Soon"
+                    android:text="@string/next_coming_soon"
                     android:gravity="right"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

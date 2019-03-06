@@ -3,21 +3,19 @@ package org.oelab.octopusengine.octolabapp.ui.rgb
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import android.view.*
-import android.widget.EditText
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.Toast
-import android.widget.ToggleButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NavUtils
 import androidx.core.view.doOnLayout
+import androidx.lifecycle.ViewModelProviders
 import com.jakewharton.rxbinding3.view.clicks
 import com.jakewharton.rxbinding3.widget.checkedChanges
-import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
-import com.skydoves.colorpickerview.sliders.AlphaSlideBar
-import com.skydoves.colorpickerview.sliders.BrightnessSlideBar
 import eu.malek.utils.DisableScrollOnTouchListener
 import eu.malek.utils.UtilsViewGroup
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -34,7 +32,17 @@ import kotlinx.android.synthetic.main.rgb_remote_single_device.view.*
 import org.oelab.octopusengine.octolabapp.R
 import java.util.concurrent.TimeUnit
 
+
+
 class RGBActivity : AppCompatActivity() {
+
+    private val subscriptions = CompositeDisposable()
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        this.menuInflater.inflate(R.menu.menu_rgb, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,51 +50,42 @@ class RGBActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        addRgbDeviceLayout(contentLinearLayout, this)
+        val viewModel = ViewModelProviders.of(this).get(RGBViewModel::class.java)
+
+        val rgbDeviceLayout1 = addRgbDeviceLayout(contentLinearLayout, this)
+        subscribeRGBDeviceLayout(rgbDeviceLayout1)
+
 
         floating_action_button.clicks().subscribeBy(
             onNext = {
-                addRgbDeviceLayout(contentLinearLayout, this)
-                    .doOnLayout {  view ->
-                        UtilsViewGroup.smoothScrollToViewBottom(scrollView,view)
-                    }
+                val rgbDeviceLayout = addRgbDeviceLayout(contentLinearLayout, this)
+
+                subscribeRGBDeviceLayout(rgbDeviceLayout)
             },
             onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
         ).addTo(subscriptions)
     }
 
-    private val subscriptions = CompositeDisposable()
-
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        this.menuInflater.inflate(R.menu.menu_rgb, menu)
-        return super.onCreateOptionsMenu(menu)
-    }
-
     private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
         val view = View.inflate(context, R.layout.rgb_remote_single_device, null)
         linearLayout.addView(view)
-
-        subscribeRGBDeviceLayout(
-            view.toggleConnectionButton,
-            view.udpIpAddressEditText,
-            view.udpPortEditText,
-            view.colorPickerView,
-            view.brightnessSlide,
-            view.alphaSlideBar
-        )
-
+        view.doOnLayout { view ->
+            UtilsViewGroup.smoothScrollToViewBottom(scrollView, view)
+        }
         return view
     }
 
     fun subscribeRGBDeviceLayout(
-        toggleConnectionButton: ToggleButton,
-        udpIpAddressEditText: EditText,
-        udpPortEditText: EditText,
-        colorPickerView: ColorPickerView,
-        brightnessSlideBar: BrightnessSlideBar,
-        alphaSlideBar: AlphaSlideBar
+        view: View
     ) {
+
+        val toggleConnectionButton = view.toggleConnectionButton
+        val udpIpAddress = view.udpIpAddressEditText
+        val udpPortEdit = view.udpPortEditText
+        val colorPickerView = view.colorPickerView
+        val brightnessSlideBar = view.brightnessSlide
+        val alphaSlideBar = view.alphaSlideBar
+
 
         val rgbEventSubject = BehaviorSubject.create<RGB>()
 
@@ -175,7 +174,8 @@ class RGBActivity : AppCompatActivity() {
             R.id.menuHelp -> showHelp()
             android.R.id.home -> {
                 // Respond to the action bar's Up/Home button
-                NavUtils.navigateUpFromSameTask(this)
+//                NavUtils.navigateUpFromSameTask(this)
+                this.onBackPressed()
                 return true
             }
         }
@@ -217,4 +217,5 @@ class RGBActivity : AppCompatActivity() {
         subscriptions.clear()
         super.onDestroy()
     }
+
 }

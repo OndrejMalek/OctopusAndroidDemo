@@ -24,6 +24,13 @@
             </intent-filter>
         </activity>
         <activity
+                android:name=".ui.select.SelectActivity"
+                android:label="@string/title_activity_select"
+                android:theme="@style/AppTheme"
+                android:launchMode="singleTop"
+                >
+        </activity>
+        <activity
                 android:name=".ui.rgb.RGBActivity"
                 android:label="@string/title_activity_rgb"
                 android:theme="@style/AppTheme.NoActionBar">
@@ -31,11 +38,6 @@
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value=".ui.select.SelectActivity" />
 
-        </activity>
-        <activity
-                android:name=".ui.select.SelectActivity"
-                android:label="@string/title_activity_select"
-                android:theme="@style/AppTheme">
         </activity>
     </application>
 
