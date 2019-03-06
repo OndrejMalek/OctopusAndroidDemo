@@ -3,8 +3,8 @@ package org.oelab.octopusengine.octolabapp.ui.select
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.android.synthetic.main.activity_select.*
-import kotlinx.android.synthetic.main.content_select.*
+import kotlinx.android.synthetic.main.select_activity.*
+import kotlinx.android.synthetic.main.select_content.*
 import org.oelab.octopusengine.octolabapp.R
 import org.oelab.octopusengine.octolabapp.ui.rgb.RGBActivity
 
@@ -13,7 +13,7 @@ class SelectActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_select)
+        setContentView(R.layout.select_activity)
         setSupportActionBar(toolbar)
 
         rgbCardView.setOnClickListener {

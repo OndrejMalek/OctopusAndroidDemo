@@ -4,7 +4,7 @@
         xmlns:tools="http://schemas.android.com/tools"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        tools:showIn="@layout/activity_select"
+        tools:showIn="@layout/select_activity"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".ui.select.SelectActivity">

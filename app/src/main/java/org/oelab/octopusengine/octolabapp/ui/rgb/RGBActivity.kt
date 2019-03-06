@@ -2,7 +2,6 @@ package org.oelab.octopusengine.octolabapp.ui.rgb
 
 import android.content.Context
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.util.Log
 import android.view.*
 import android.widget.EditText
@@ -28,7 +27,7 @@ import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.BehaviorSubject
-import kotlinx.android.synthetic.main.activity_rgb.*
+import kotlinx.android.synthetic.main.rgb_activity.*
 import kotlinx.android.synthetic.main.rgb_help_dialog.view.*
 import kotlinx.android.synthetic.main.rgb_remote_single_device.*
 import kotlinx.android.synthetic.main.rgb_remote_single_device.view.*
@@ -39,7 +38,7 @@ class RGBActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_rgb)
+        setContentView(R.layout.rgb_activity)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
