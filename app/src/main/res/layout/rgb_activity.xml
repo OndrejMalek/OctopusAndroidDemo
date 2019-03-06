@@ -12,14 +12,17 @@
                                            xmlns:tools="http://schemas.android.com/tools"
                                            android:id="@+id/scrollView"
                                            android:layout_width="match_parent"
-                                           android:layout_height="match_parent"
-                                           tools:context=".ui.rgb.RGBFragment">
+                                           android:layout_height="wrap_content"
+                                           tools:context=".ui.rgb.RGBFragment"
+                                           app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            >
 
         <LinearLayout
                 android:id="@+id/outerLinearLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                >
 
             <LinearLayout
                     android:id="@+id/contentLinearLayout"

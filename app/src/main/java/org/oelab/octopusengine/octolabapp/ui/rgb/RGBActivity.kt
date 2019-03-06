@@ -59,6 +59,9 @@ class RGBActivity : AppCompatActivity() {
         floating_action_button.clicks().subscribeBy(
             onNext = {
                 val rgbDeviceLayout = addRgbDeviceLayout(contentLinearLayout, this)
+                rgbDeviceLayout.doOnLayout { view ->
+                    UtilsViewGroup.smoothScrollToViewBottom(scrollView, view)
+                }
 
                 subscribeRGBDeviceLayout(rgbDeviceLayout)
             },
@@ -69,9 +72,6 @@ class RGBActivity : AppCompatActivity() {
     private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
         val view = View.inflate(context, R.layout.rgb_remote_single_device, null)
         linearLayout.addView(view)
-        view.doOnLayout { view ->
-            UtilsViewGroup.smoothScrollToViewBottom(scrollView, view)
-        }
         return view
     }
 

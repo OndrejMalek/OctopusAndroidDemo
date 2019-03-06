@@ -33,7 +33,9 @@
         <activity
                 android:name=".ui.rgb.RGBActivity"
                 android:label="@string/title_activity_rgb"
-                android:theme="@style/AppTheme.NoActionBar">
+                android:theme="@style/AppTheme.NoActionBar"
+                android:launchMode="singleTop"
+                >
             <meta-data
                     android:name="android.support.PARENT_ACTIVITY"
                     android:value=".ui.select.SelectActivity" />
