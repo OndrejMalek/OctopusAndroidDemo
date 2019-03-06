@@ -22,7 +22,7 @@
             xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            tools:showIn="@layout/fragment_rgb"
+            tools:showIn="@layout/rgb_screen"
             android:paddingBottom="16dp">
 
         <TextView

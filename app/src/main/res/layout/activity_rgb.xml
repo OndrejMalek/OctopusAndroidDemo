@@ -21,7 +21,48 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <include layout="@layout/content_rgb"/>
+    <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+                                           xmlns:app="http://schemas.android.com/apk/res-auto"
+                                           xmlns:tools="http://schemas.android.com/tools"
+                                           android:id="@+id/scrollView"
+                                           android:layout_width="match_parent"
+                                           android:layout_height="match_parent"
+                                           tools:context=".ui.rgb.RGBFragment">
 
+        <LinearLayout
+                android:id="@+id/outerLinearLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            <LinearLayout
+                    android:id="@+id/contentLinearLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+
+            </LinearLayout>
+
+
+            <View
+                    android:id="@+id/fabPadding"
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    />
+
+        </LinearLayout>
+
+
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/floating_action_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|right"
+            android:layout_margin="16dp"
+            app:srcCompat="@drawable/ic_add_24px"
+            />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
