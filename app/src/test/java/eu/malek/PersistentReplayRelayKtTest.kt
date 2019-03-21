@@ -1,17 +1,97 @@
 package eu.malek
 
-import com.google.common.truth.ExpectFailure
 import com.google.common.truth.Truth
+import com.jakewharton.rxrelay2.ReplayRelay
 import io.reactivecache2.Provider
 import io.reactivecache2.ReactiveCache
 import io.reactivex.Observable
 import io.reactivex.Single
+import io.reactivex.disposables.Disposable
 import io.victoralbertos.jolyglot.GsonSpeaker
 import org.junit.Test
 
 import java.io.File
 
 class PersistentReplayRelayKtTest {
+
+    @Test
+    fun attachToReplayStream_keepsValues() {
+        val scopeMap = HashMap<String, Any>()
+
+        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut2 = attachToReplayStream(scopeMap, Observable.range(5, 5), "test1")
+
+        observableOut2
+            .test()
+            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+        observableOut
+            .test()
+            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+    }
+
+    @Test
+    fun attachToReplayStream_keepsValue() {
+        val scopeMap = HashMap<String, Any>()
+
+        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
+        
+        val observableOut2 = attachToReplayStream(scopeMap, Observable.range(5, 5), "test1")
+
+        observableOut2
+            .test()
+            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+        observableOut
+            .test()
+            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+
+        
+    }
+
+    @Test
+    fun attachToReplayStream_keepsStream() {
+        val scopeMap = HashMap<String, Any>()
+
+        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut2 = attachToReplayStream(scopeMap, Observable.range(5, 5), "test1")
+
+
+        Truth.assertThat(observableOut).isSameAs(observableOut2)
+
+        
+        
+    }
+
+    @Test
+    fun attachToReplayStream_keepsRelay() {
+        val scopeMap = HashMap<String, Any>()
+
+        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
+        val relay = getRelay<Int>(scopeMap, "test1", 0)
+        val observableOut2 = attachToReplayStream(scopeMap, Observable.range(5, 5), "test1")
+        val relay2 = getRelay<Int>(scopeMap, "test1", 0)
+
+
+        Truth.assertThat(relay).isSameAs(relay2)
+
+        
+        
+    }
+
+    @Test
+    fun attachToReplayStream_passesValues() {
+        val scopeMap = HashMap<String, Any>()
+
+        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
+
+        observableOut
+            .test()
+            .assertValues(0, 1, 2, 3, 4)
+
+        
+    }
+
 
     @Test
     fun persistentReplay_passesValues() {
@@ -28,7 +108,7 @@ class PersistentReplayRelayKtTest {
     }
 
     @Test
-    fun persistentReplay_replaysValues() {
+    fun persistentReplay_replaysValuesMultipleTimes() {
         val scopeMap = HashMap<String, Any>()
 
         Observable.range(0, 5)
@@ -53,11 +133,11 @@ class PersistentReplayRelayKtTest {
     @Test
     fun perRep() {
 
-        Observable.range(0,4)
+        Observable.range(0, 4)
             .subscribe()
 
 
-        Observable.range(0,4)
+        Observable.range(0, 4)
             .subscribe()
 
     }
@@ -81,7 +161,7 @@ class PersistentReplayRelayKtTest {
                 .concatWith(Observable.range(0, 5))
                 .toList()
                 .compose(cacheProvider.replace())
-                .doOnSuccess{ println(it) }
+                .doOnSuccess { println(it) }
                 .subscribe()
 
         val rangeDisposable2 =
@@ -91,7 +171,7 @@ class PersistentReplayRelayKtTest {
                 .concatWith(Observable.range(0, 5))
                 .toList()
                 .compose(cacheProvider.replace())
-                .doOnSuccess{ println(it) }
+                .doOnSuccess { println(it) }
                 .test()
                 .assertValue(arrayListOf(1, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4))
                 .assertValueCount(1)
@@ -119,7 +199,6 @@ class PersistentReplayRelayKtTest {
 
         if (testFile.exists()) testFile.delete()
     }
-
 
 
 }
