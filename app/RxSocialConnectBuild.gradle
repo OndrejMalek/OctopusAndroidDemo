@@ -1,0 +1,16 @@
+// https://github.com/VictorAlbertos/RxSocialConnect-Android
+// OAuth RxJava extension for Android. iOS version is located at this repository.
+// requires RxJava
+
+allprojects {
+    repositories {
+        jcenter()
+        maven { url "https://jitpack.io" }
+    }
+}
+
+
+dependencies {
+    implementation 'com.github.VictorAlbertos.RxSocialConnect-Android:core:1.0.1-2.x'
+//    implementation 'io.reactivex.rxjava2:rxjava:2.0.5'
+}

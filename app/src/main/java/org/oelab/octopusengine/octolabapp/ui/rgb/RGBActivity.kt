@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.doOnLayout
 import androidx.lifecycle.ViewModelProviders
+import au.com.gridstone.rxstore.RxStore
 import com.jakewharton.rxbinding3.view.clicks
 import com.jakewharton.rxbinding3.widget.checkedChanges
 import com.jakewharton.rxrelay2.BehaviorRelay
@@ -133,9 +134,10 @@ class RGBActivity : AppCompatActivity() {
 
         val rgbEventSource = rgbEventSubject.debounce(2L, TimeUnit.MILLISECONDS, Schedulers.computation())
 
-        rgbEventSource.compose(persistentReplay("rgb_rgbEvent", -1, (application as App).scope))
+
 
         rgbEventSource
+            .compose(persistentReplay("rgb_rgbEvent", -1, (application as App).scope))
             .subscribe(rgbDeviceState.rgbEventRelay)
             .addTo(subscriptions)
 

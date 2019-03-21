@@ -6,6 +6,8 @@ apply plugin: 'kotlin-android-extensions'
 
 apply from: 'RxPermissionsBuild.gradle'
 apply from: 'RxStoreBuild.gradle'
+apply from: 'ReactiveCacheBuild.gradle'
+
 
 android {
 
