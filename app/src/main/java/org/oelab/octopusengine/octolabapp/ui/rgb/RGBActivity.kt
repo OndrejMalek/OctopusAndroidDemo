@@ -15,13 +15,16 @@ import androidx.lifecycle.ViewModelProviders
 import com.jakewharton.rxbinding3.view.clicks
 import com.jakewharton.rxbinding3.widget.checkedChanges
 import com.jakewharton.rxrelay2.BehaviorRelay
+import com.jakewharton.rxrelay2.ReplayRelay
 import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import com.skydoves.colorpickerview.sliders.AlphaSlideBar
 import com.skydoves.colorpickerview.sliders.BrightnessSlideBar
+import eu.malek.persistState
 import eu.malek.attachToReplayStream
 import eu.malek.utils.DisableScrollOnTouchListener
 import eu.malek.utils.UtilsViewGroup
+import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.exceptions.OnErrorNotImplementedException
@@ -69,27 +72,30 @@ class RGBActivity : AppCompatActivity() {
 //            }.addTo(subscriptions)
 
 
-        attachToReplayStream<Any,Any>(
-            (this.application as App).scope,
-            floating_action_button
-                .clicks()
-                .scan(0, { akku, value -> akku + 1  })
-                .map { RgbDeviceState(it) },
-            "addRgbDevice",
-            10
-        )
-            .cast(RgbDeviceState::class.java)
-            .subscribeBy(
-            onNext = { rgbDeviceState ->
-                val rgbDeviceLayout = addRgbDeviceLayout(contentLinearLayout, this)
-                rgbDeviceLayout.doOnLayout { view ->
-                    UtilsViewGroup.smoothScrollToViewBottom(scrollView, view)
-                }
+        val appScopeMap = (this.application as App).scope
 
-                subscribeRGBDeviceLayout(rgbDeviceLayout, rgbDeviceState)
-            },
-            onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
-        ).addTo(subscriptions)
+        floating_action_button
+            .clicks()
+            .skip(1)
+            .compose(
+                persistState(
+                    appScopeMap,
+                    "addRgbDevice"
+                )
+            )
+            .scan(0, { akku, value -> akku + 1 })
+            .map { RgbDeviceState(it) }
+            .subscribeBy(
+                onNext = { rgbDeviceState ->
+                    val rgbDeviceLayout = addRgbDeviceLayout(contentLinearLayout, this)
+                    rgbDeviceLayout.doOnLayout { view ->
+                        UtilsViewGroup.smoothScrollToViewBottom(scrollView, view)
+                    }
+
+                    subscribeRGBDeviceLayout(rgbDeviceLayout, rgbDeviceState, appScopeMap)
+                },
+                onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
+            ).addTo(subscriptions)
     }
 
     private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
@@ -100,7 +106,8 @@ class RGBActivity : AppCompatActivity() {
 
     fun subscribeRGBDeviceLayout(
         view: View,
-        rgbDeviceState: RgbDeviceState
+        rgbDeviceState: RgbDeviceState,
+        appScopeMap: HashMap<String, Any>
     ) {
 
         val toggleConnectionButton = view.toggleConnectionButton
@@ -110,21 +117,23 @@ class RGBActivity : AppCompatActivity() {
         val colorPickerView = view.colorPickerView
         val alphaSlideBar = view.alphaSlideBar
 
-        val rgbPickerSubject = createRgbPickerSubject(brightnessSlideBar, colorPickerView, alphaSlideBar)
 
-        if (rgbDeviceState.rgbEventRelay.value != null) colorPickerView.fireColorListener(
-            rgbDeviceState.rgbEventRelay.value!!.toIntColor(),
-            false
-        )
+        val rgbPickerEvente =
+            createRgbPickerSubject(brightnessSlideBar, colorPickerView, alphaSlideBar)
+                .compose(
+                    persistState<RGB>(
+                        appScopeMap,
+                        storageId = "rgbPicker${rgbDeviceState.id}",
+                        storedItemsMaxCount = 1,
+                        restoreState = { restore: Observable<RGB> ->
+                            restore
+                                .last(RGB())
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .subscribeBy{ colorPickerView.fireColorListener(it.toIntColor(), false) }
+                        }
+                    )
+                )
 
-        val rgbEventSource = rgbPickerSubject.debounce(2L, TimeUnit.MILLISECONDS, Schedulers.computation())
-
-
-        rgbEventSource
-            .subscribe(rgbDeviceState.rgbEventRelay)
-            .addTo(subscriptions)
-
-        rgbDeviceState.rgbEventRelay
 
         val checkFieldsAndToggleConnection = toggleConnectionButton
             .checkedChanges()
@@ -189,7 +198,7 @@ class RGBActivity : AppCompatActivity() {
         brightnessSlideBar: BrightnessSlideBar,
         colorPickerView: ColorPickerView,
         alphaSlideBar: AlphaSlideBar
-    ): BehaviorSubject<RGB> {
+    ): Observable<RGB> {
         brightnessSlideBar.setOnTouchListener(DisableScrollOnTouchListener(brightnessSlideBar))
         colorPickerView.setOnTouchListener(DisableScrollOnTouchListener(colorPickerView))
         colorPickerView.attachBrightnessSlider(brightnessSlideBar)
@@ -206,7 +215,9 @@ class RGBActivity : AppCompatActivity() {
                     )
                 )
             })
-        return rgbPickerSubject
+
+        return rgbPickerSubject.debounce(2L, TimeUnit.MILLISECONDS, Schedulers.computation())
+
     }
 
 
@@ -274,7 +285,7 @@ class RGBActivity : AppCompatActivity() {
 
 
 data class RgbDeviceState(
-    val id : Int,
+    val id: Int,
     val rgb: RGB = RGB()
 ) {
     val rgbEventRelay: BehaviorRelay<RGB> = BehaviorRelay.create()

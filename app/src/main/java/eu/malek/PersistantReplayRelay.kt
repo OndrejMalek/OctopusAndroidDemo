@@ -4,7 +4,9 @@ import com.jakewharton.rxrelay2.ReplayRelay
 import io.reactivex.Observable
 import io.reactivex.ObservableTransformer
 import io.reactivex.disposables.Disposable
+import io.reactivex.disposables.Disposables
 import java.util.HashMap
+import java.util.concurrent.Callable
 
 
 const val INFINITE = -1
@@ -29,18 +31,23 @@ fun <T, R> attachToReplayStream(
     val relay: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
     val disposable = observableIn.subscribe(relay)
 
-    return getStream(scopeMap, storageId, relay, disposable)
+    return getStream(scopeMap, storageId) { relay.doOnDispose { disposable.dispose() } }
 }
 
-fun <T> attachToReplayRealay(
+fun <T> persistState(
     scopeMap: HashMap<String, Any>,
     storageId: String,
-    storedItemsMaxCount: Int = INFINITE
-): (Observable<T>) -> Observable<T> = { observableIn ->
-    val relay: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
-    val disposable = observableIn.subscribe(relay)
-    val stream = getStream(scopeMap, storageId, relay, disposable)
-    stream
+    storedItemsMaxCount: Int = INFINITE,
+    restoreState: (Observable<T>) -> Unit = {}
+): (Observable<T>) -> Observable<T> =
+    { from: Observable<T> ->
+        val restored: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
+
+        var disposable: Disposable? = null
+        restoreState.invoke(restored.doOnComplete { disposable = from.subscribe(restored) })
+
+    val stream = getStream(scopeMap, storageId) { restored }
+        stream.doOnDispose { disposable?.dispose() }
 }
 
 
@@ -87,8 +94,7 @@ fun <R, T> getStream(
 fun <T> getStream(
     scopeMap: HashMap<String, Any>,
     storageId: String,
-    relay: ReplayRelay<T>,
-    disposable: Disposable
+    factory: () -> Observable<T>
 ): Observable<T> {
     val storageKey = storageId + "stream"
     val stored = scopeMap.get(storageKey)
@@ -98,7 +104,7 @@ fun <T> getStream(
         null
     }
     if (stream == null) {
-        stream = relay.doOnDispose { disposable.dispose() }
+        stream = factory.invoke()
         scopeMap.put(storageKey, stream)
     }
     return stream!!
