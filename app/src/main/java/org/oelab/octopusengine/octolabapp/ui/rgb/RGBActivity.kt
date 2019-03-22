@@ -12,16 +12,16 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.doOnLayout
 import androidx.lifecycle.ViewModelProviders
-import au.com.gridstone.rxstore.RxStore
 import com.jakewharton.rxbinding3.view.clicks
 import com.jakewharton.rxbinding3.widget.checkedChanges
 import com.jakewharton.rxrelay2.BehaviorRelay
-import com.jakewharton.rxrelay2.ReplayRelay
+import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
-import eu.malek.persistentReplay
+import com.skydoves.colorpickerview.sliders.AlphaSlideBar
+import com.skydoves.colorpickerview.sliders.BrightnessSlideBar
+import eu.malek.attachToReplayStream
 import eu.malek.utils.DisableScrollOnTouchListener
 import eu.malek.utils.UtilsViewGroup
-import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.exceptions.OnErrorNotImplementedException
@@ -33,7 +33,6 @@ import kotlinx.android.synthetic.main.rgb_activity.*
 import kotlinx.android.synthetic.main.rgb_help_dialog.view.*
 import kotlinx.android.synthetic.main.rgb_remote_single_device.*
 import kotlinx.android.synthetic.main.rgb_remote_single_device.view.*
-import org.jetbrains.anko.childrenRecursiveSequence
 import org.oelab.octopusengine.octolabapp.R
 import org.oelab.octopusengine.octolabapp.ui.App
 import java.util.*
@@ -58,25 +57,29 @@ class RGBActivity : AppCompatActivity() {
 
         val viewModel = ViewModelProviders.of(this).get(RGBViewModel::class.java)
 
+//
+//        viewModel.fabReplay
+//            .take(1)
+//            .subscribeBy { rgbDeviceState ->
+//                subscribeRGBDeviceLayout(
+//                    addRgbDeviceLayout(contentLinearLayout, this),
+//                    rgbDeviceState
+//                )
+//
+//            }.addTo(subscriptions)
 
-        viewModel.fabReplay
-            .take(1)
-            .subscribeBy { rgbDeviceState ->
-                subscribeRGBDeviceLayout(
-                    addRgbDeviceLayout(contentLinearLayout, this),
-                    rgbDeviceState
-                )
 
-            }.addTo(subscriptions)
-
-
-        floating_action_button
-            .clicks()
-            .map { RgbDeviceState() }
-            .subscribe(viewModel.fabReplay)
-            .addTo(subscriptions)
-
-        viewModel.fabReplay.subscribeBy(
+        attachToReplayStream<Any,Any>(
+            (this.application as App).scope,
+            floating_action_button
+                .clicks()
+                .scan(0, { akku, value -> akku + 1  })
+                .map { RgbDeviceState(it) },
+            "addRgbDevice",
+            10
+        )
+            .cast(RgbDeviceState::class.java)
+            .subscribeBy(
             onNext = { rgbDeviceState ->
                 val rgbDeviceLayout = addRgbDeviceLayout(contentLinearLayout, this)
                 rgbDeviceLayout.doOnLayout { view ->
@@ -90,9 +93,8 @@ class RGBActivity : AppCompatActivity() {
     }
 
     private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
-        val view = View.inflate(context, R.layout.rgb_remote_single_device, linearLayout)
-        view.id = View.generateViewId()
-        view.childrenRecursiveSequence().forEach { it.id = View.generateViewId() }
+        val view = View.inflate(context, R.layout.rgb_remote_single_device, null)
+        linearLayout.addView(view)
         return view
     }
 
@@ -108,36 +110,17 @@ class RGBActivity : AppCompatActivity() {
         val colorPickerView = view.colorPickerView
         val alphaSlideBar = view.alphaSlideBar
 
-        brightnessSlideBar.setOnTouchListener(DisableScrollOnTouchListener(brightnessSlideBar))
-        colorPickerView.setOnTouchListener(DisableScrollOnTouchListener(colorPickerView))
-        colorPickerView.attachBrightnessSlider(brightnessSlideBar)
-        colorPickerView.attachAlphaSlider(alphaSlideBar) // not used but crashes without
-        colorPickerView.setLifecycleOwner(this)
+        val rgbPickerSubject = createRgbPickerSubject(brightnessSlideBar, colorPickerView, alphaSlideBar)
 
-
-        val rgbEventSubject = BehaviorSubject.create<RGB>()
-
-        colorPickerView.setColorListener(
-            ColorEnvelopeListener { envelope, fromUser ->
-                rgbEventSubject.onNext(
-                    RGB(
-                        envelope.argb[1],
-                        envelope.argb[2],
-                        envelope.argb[3]
-                    )
-                )
-            })
         if (rgbDeviceState.rgbEventRelay.value != null) colorPickerView.fireColorListener(
             rgbDeviceState.rgbEventRelay.value!!.toIntColor(),
             false
         )
 
-        val rgbEventSource = rgbEventSubject.debounce(2L, TimeUnit.MILLISECONDS, Schedulers.computation())
-
+        val rgbEventSource = rgbPickerSubject.debounce(2L, TimeUnit.MILLISECONDS, Schedulers.computation())
 
 
         rgbEventSource
-            .compose(persistentReplay("rgb_rgbEvent", -1, (application as App).scope))
             .subscribe(rgbDeviceState.rgbEventRelay)
             .addTo(subscriptions)
 
@@ -202,6 +185,29 @@ class RGBActivity : AppCompatActivity() {
         checkFieldsAndToggleConnection.connect().addTo(subscriptions)
     }
 
+    private fun createRgbPickerSubject(
+        brightnessSlideBar: BrightnessSlideBar,
+        colorPickerView: ColorPickerView,
+        alphaSlideBar: AlphaSlideBar
+    ): BehaviorSubject<RGB> {
+        brightnessSlideBar.setOnTouchListener(DisableScrollOnTouchListener(brightnessSlideBar))
+        colorPickerView.setOnTouchListener(DisableScrollOnTouchListener(colorPickerView))
+        colorPickerView.attachBrightnessSlider(brightnessSlideBar)
+        colorPickerView.attachAlphaSlider(alphaSlideBar) // not used but crashes without
+        colorPickerView.setLifecycleOwner(this)
+        val rgbPickerSubject = BehaviorSubject.create<RGB>()
+        colorPickerView.setColorListener(
+            ColorEnvelopeListener { envelope, fromUser ->
+                rgbPickerSubject.onNext(
+                    RGB(
+                        envelope.argb[1],
+                        envelope.argb[2],
+                        envelope.argb[3]
+                    )
+                )
+            })
+        return rgbPickerSubject
+    }
 
 
     private fun showUdpPortError(isValid: Boolean) {
@@ -268,7 +274,7 @@ class RGBActivity : AppCompatActivity() {
 
 
 data class RgbDeviceState(
-    val udpFieldsUIModel: CheckedUdpFieldsUIModel = CheckedUdpFieldsUIModel(),
+    val id : Int,
     val rgb: RGB = RGB()
 ) {
     val rgbEventRelay: BehaviorRelay<RGB> = BehaviorRelay.create()

@@ -1,13 +1,21 @@
 package eu.malek
 
-import com.google.common.truth.Truth
+import com.google.common.truth.Truth.*
+import com.jakewharton.rxrelay2.BehaviorRelay
 import com.jakewharton.rxrelay2.ReplayRelay
 import io.reactivecache2.Provider
 import io.reactivecache2.ReactiveCache
 import io.reactivex.Observable
+import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.disposables.Disposable
+import io.reactivex.functions.BiFunction
+import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
+import io.reactivex.subjects.BehaviorSubject
+import io.reactivex.subjects.ReplaySubject
 import io.victoralbertos.jolyglot.GsonSpeaker
+import org.junit.Ignore
 import org.junit.Test
 
 import java.io.File
@@ -18,8 +26,8 @@ class PersistentReplayRelayKtTest {
     fun attachToReplayStream_keepsValues() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
-        val observableOut2 = attachToReplayStream(scopeMap, Observable.range(5, 5), "test1")
+        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
 
         observableOut2
             .test()
@@ -30,60 +38,103 @@ class PersistentReplayRelayKtTest {
 
     }
 
+    @Ignore
+    fun rxtest() {
+        val subject = ReplaySubject.create<Int>()
+
+        Observable
+            .range(0,4)
+            .observeOn(Schedulers.computation())
+            .mergeWith(subject)
+            .map {if (it != 666) subject.onNext(666)
+                print(" $it ")
+                it}
+//            .concatWith(Observable.error(Throwable()))
+            .mergeWith(Observable.just(3,4))
+            .test()
+            .assertValueCount(60)
+        //.assertError(Throwable())
+
+
+    }
+
     @Test
-    fun attachToReplayStream_keepsValue() {
+    fun scan() {
+
+        Observable.range(0,4)
+            .scan(0, BiFunction { t1, t2 -> t1 + 1 })
+            .test()
+            .assertValues(1)
+    }
+
+    /**
+     * Dunno how to sofar
+     */
+    @Ignore
+    fun attachToReplayStream_worksAfterOnCompleteOnError() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
-        
-        val observableOut2 = attachToReplayStream(scopeMap, Observable.range(5, 5), "test1")
 
+        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.error(Throwable("Error")), "test1")
+        observableOut
+            .subscribeBy(onError = {})
+            .dispose()
+        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
+
+        assertThat(observableOut).isSameAs(observableOut2)
         observableOut2
             .test()
             .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+    }
+
+
+    @Test
+    fun attachToReplayStream_worksAfterDifferentSubscriberDisposed() {
+        val scopeMap = HashMap<String, Any>()
+
+
+        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
         observableOut
+            .subscribe().dispose()
+        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
+
+        assertThat(observableOut).isSameAs(observableOut2)
+        observableOut2
             .test()
             .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 
-
-        
     }
 
     @Test
     fun attachToReplayStream_keepsStream() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
-        val observableOut2 = attachToReplayStream(scopeMap, Observable.range(5, 5), "test1")
+        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
 
 
-        Truth.assertThat(observableOut).isSameAs(observableOut2)
-
-        
-        
+        assertThat(observableOut).isSameAs(observableOut2)
     }
 
     @Test
     fun attachToReplayStream_keepsRelay() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
         val relay = getRelay<Int>(scopeMap, "test1", 0)
-        val observableOut2 = attachToReplayStream(scopeMap, Observable.range(5, 5), "test1")
+        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
         val relay2 = getRelay<Int>(scopeMap, "test1", 0)
 
 
-        Truth.assertThat(relay).isSameAs(relay2)
-
-        
-        
+        assertThat(relay).isSameAs(relay2)
     }
 
     @Test
     fun attachToReplayStream_passesValues() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
 
         observableOut
             .test()
@@ -194,7 +245,7 @@ class PersistentReplayRelayKtTest {
         cache.evictAll().subscribe()
 
 
-        Truth.assertThat(testFile.exists()).isFalse()
+        assertThat(testFile.exists()).isFalse()
 
 
         if (testFile.exists()) testFile.delete()
