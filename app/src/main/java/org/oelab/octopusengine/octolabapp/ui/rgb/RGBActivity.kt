@@ -15,13 +15,11 @@ import androidx.lifecycle.ViewModelProviders
 import com.jakewharton.rxbinding3.view.clicks
 import com.jakewharton.rxbinding3.widget.checkedChanges
 import com.jakewharton.rxrelay2.BehaviorRelay
-import com.jakewharton.rxrelay2.ReplayRelay
 import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import com.skydoves.colorpickerview.sliders.AlphaSlideBar
 import com.skydoves.colorpickerview.sliders.BrightnessSlideBar
 import eu.malek.persistState
-import eu.malek.attachToReplayStream
 import eu.malek.utils.DisableScrollOnTouchListener
 import eu.malek.utils.UtilsViewGroup
 import io.reactivex.Observable
@@ -76,7 +74,6 @@ class RGBActivity : AppCompatActivity() {
 
         floating_action_button
             .clicks()
-            .skip(1)
             .compose(
                 persistState(
                     appScopeMap,
@@ -99,8 +96,8 @@ class RGBActivity : AppCompatActivity() {
     }
 
     private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
-        val view = View.inflate(context, R.layout.rgb_remote_single_device, null)
-        linearLayout.addView(view)
+        val view = View.inflate(context, R.layout.rgb_remote_single_device, linearLayout)
+//        linearLayout.addView(view)
         return view
     }
 
@@ -118,8 +115,13 @@ class RGBActivity : AppCompatActivity() {
         val alphaSlideBar = view.alphaSlideBar
 
 
-        val rgbPickerEvente =
+        val rgbPickerEvent =
             createRgbPickerSubject(brightnessSlideBar, colorPickerView, alphaSlideBar)
+
+        colorPickerView.fireColorListener(0xff0000, false)
+
+        val rgbPickerSaveState =
+            rgbPickerEvent
                 .compose(
                     persistState<RGB>(
                         appScopeMap,
@@ -129,10 +131,11 @@ class RGBActivity : AppCompatActivity() {
                             restore
                                 .last(RGB())
                                 .observeOn(AndroidSchedulers.mainThread())
-                                .subscribeBy{ colorPickerView.fireColorListener(it.toIntColor(), false) }
+                                .subscribeBy{ colorPickerView.fireColorListener(it.toIntColor(), false) }.addTo(subscriptions)
                         }
                     )
-                )
+                ).subscribe()
+                .addTo(subscriptions)
 
 
         val checkFieldsAndToggleConnection = toggleConnectionButton
@@ -170,7 +173,7 @@ class RGBActivity : AppCompatActivity() {
 
         val broadcastRgbViaUdpEvent = checkFieldsAndToggleConnection
             .observeOn(Schedulers.io())
-            .compose(broadcastRgbViaUdp(rgbDeviceState.rgbEventRelay, socket, Schedulers.io()))
+            .compose(broadcastRgbViaUdp(rgbPickerEvent, socket, Schedulers.io()))
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
                 onNext = { model: BroadcastModel ->

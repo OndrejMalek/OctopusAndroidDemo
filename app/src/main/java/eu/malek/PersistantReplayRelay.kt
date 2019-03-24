@@ -4,9 +4,7 @@ import com.jakewharton.rxrelay2.ReplayRelay
 import io.reactivex.Observable
 import io.reactivex.ObservableTransformer
 import io.reactivex.disposables.Disposable
-import io.reactivex.disposables.Disposables
 import java.util.HashMap
-import java.util.concurrent.Callable
 
 
 const val INFINITE = -1
@@ -38,17 +36,18 @@ fun <T> persistState(
     scopeMap: HashMap<String, Any>,
     storageId: String,
     storedItemsMaxCount: Int = INFINITE,
-    restoreState: (Observable<T>) -> Unit = {}
+    restoreState: ((Observable<T>) -> Unit)? = null
 ): (Observable<T>) -> Observable<T> =
     { from: Observable<T> ->
         val restored: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
 
         var disposable: Disposable? = null
-        restoreState.invoke(restored.doOnComplete { disposable = from.subscribe(restored) })
+        if (restoreState != null) restoreState.invoke(restored.doOnComplete { disposable = from.subscribe(restored) })
+        else  disposable = from.subscribe(restored)
 
-    val stream = getStream(scopeMap, storageId) { restored }
+        val stream = getStream(scopeMap, storageId) { restored }
         stream.doOnDispose { disposable?.dispose() }
-}
+    }
 
 
 fun <T> getRelay(

@@ -1,19 +1,11 @@
 package eu.malek
 
 import com.google.common.truth.Truth.*
-import com.jakewharton.rxrelay2.BehaviorRelay
-import com.jakewharton.rxrelay2.ReplayRelay
 import io.reactivecache2.Provider
 import io.reactivecache2.ReactiveCache
 import io.reactivex.Observable
-import io.reactivex.Scheduler
 import io.reactivex.Single
-import io.reactivex.disposables.Disposable
-import io.reactivex.functions.BiFunction
 import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.ReplaySubject
 import io.victoralbertos.jolyglot.GsonSpeaker
 import org.junit.Ignore
 import org.junit.Test
@@ -23,63 +15,85 @@ import java.io.File
 class PersistentReplayRelayKtTest {
 
     @Test
-    fun attachToReplayStream_keepsValues() {
+    fun persistState_restoresState() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
-        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
+        var stateFirst: Int? = null
+        val disposable = Observable.range(0, 5)
+            .compose(
+                persistState(
+                    scopeMap = scopeMap,
+                    storageId = "test1",
+                    restoreState = { restore -> restore.subscribeBy { stateFirst = it } })
+            ).subscribe()
+        disposable.dispose()
 
-        observableOut2
+        val disposableRestores = Observable.range(5, 5)
+            .compose(
+                persistState(
+                    scopeMap = scopeMap,
+                    storageId = "test1",
+                    restoreState = { restore -> restore.subscribeBy { stateFirst = it } }
+                )
+            )
             .test()
-            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-        observableOut
-            .test()
-            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-
-    }
-
-    @Ignore
-    fun rxtest() {
-        val subject = ReplaySubject.create<Int>()
-
-        Observable
-            .range(0,4)
-            .observeOn(Schedulers.computation())
-            .mergeWith(subject)
-            .map {if (it != 666) subject.onNext(666)
-                print(" $it ")
-                it}
-//            .concatWith(Observable.error(Throwable()))
-            .mergeWith(Observable.just(3,4))
-            .test()
-            .assertValueCount(60)
-        //.assertError(Throwable())
-
-
+            .assertOf({stateFirst == 9})
     }
 
     @Test
-    fun scan() {
+    fun persistState_storesItemsMaxCountDoesNotChange() {
+        val scopeMap = HashMap<String, Any>()
 
-        Observable.range(0,4)
-            .scan(0, BiFunction { t1, t2 -> t1 + 1 })
+
+        val observableOut = Observable.range(0, 5)
+            .compose(persistState(scopeMap, "test1", 1))
+        val observableOut2 = Observable.range(5, 5)
+            .compose(persistState(scopeMap, "test1", 2))
+
+
+        observableOut
             .test()
-            .assertValues(1)
+            .assertValues(9)
+        observableOut2
+            .test()
+            .assertValues(9)
     }
+
+    @Test
+    fun persistState_keepsValues() {
+        val scopeMap = HashMap<String, Any>()
+
+
+        val observableOut = Observable.range(0, 5)
+            .compose(persistState(scopeMap, "test1"))
+        val observableOut2 = Observable.range(5, 5)
+            .compose(persistState(scopeMap, "test1"))
+
+
+        observableOut
+            .test()
+            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+        observableOut2
+            .test()
+            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+    }
+
 
     /**
      * Dunno how to sofar
      */
     @Ignore
-    fun attachToReplayStream_worksAfterOnCompleteOnError() {
+    fun persistState_worksAfterOnCompleteOnError() {
         val scopeMap = HashMap<String, Any>()
 
 
-        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.error(Throwable("Error")), "test1")
+        val observableOut = Observable.error<Throwable>(Throwable("Error"))
+            .compose(persistState(scopeMap, "test1"))
         observableOut
             .subscribeBy(onError = {})
             .dispose()
-        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
+        val observableOut2 = Observable.range(5, 5)
+            .compose(persistState(scopeMap, "test1"))
 
         assertThat(observableOut).isSameAs(observableOut2)
         observableOut2
@@ -90,40 +104,45 @@ class PersistentReplayRelayKtTest {
 
 
     @Test
-    fun attachToReplayStream_worksAfterDifferentSubscriberDisposed() {
+    fun persistState_worksAfterDifferentSubscriberDisposed() {
         val scopeMap = HashMap<String, Any>()
 
 
-        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut = Observable.range(0, 5)
+            .compose(persistState(scopeMap, "test1"))
         observableOut
             .subscribe().dispose()
-        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
+        val observableOut2 = Observable.range(5, 5)
+            .compose(persistState(scopeMap, "test1"))
 
-        assertThat(observableOut).isSameAs(observableOut2)
         observableOut2
             .test()
             .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
 
     }
 
-    @Test
-    fun attachToReplayStream_keepsStream() {
+    @Ignore
+    fun persistState_keepsStream() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
-        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
+        val observableOut = Observable.range(0, 5)
+            .compose(persistState(scopeMap, "test1"))
+        val observableOut2 = Observable.range(5, 5)
+            .compose(persistState(scopeMap, "test1"))
 
 
         assertThat(observableOut).isSameAs(observableOut2)
     }
 
     @Test
-    fun attachToReplayStream_keepsRelay() {
+    fun persistState_keepsRelay() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut = Observable.range(0, 5)
+            .compose(persistState(scopeMap, "test1"))
         val relay = getRelay<Int>(scopeMap, "test1", 0)
-        val observableOut2 = attachToReplayStream<Int,Int>(scopeMap, Observable.range(5, 5), "test1")
+        val observableOut2 = Observable.range(5, 5)
+            .compose(persistState(scopeMap, "test1"))
         val relay2 = getRelay<Int>(scopeMap, "test1", 0)
 
 
@@ -131,16 +150,15 @@ class PersistentReplayRelayKtTest {
     }
 
     @Test
-    fun attachToReplayStream_passesValues() {
+    fun persistState_passesValues() {
         val scopeMap = HashMap<String, Any>()
 
-        val observableOut = attachToReplayStream<Int,Int>(scopeMap, Observable.range(0, 5), "test1")
+        val observableOut = Observable.range(0, 5)
+            .compose(persistState(scopeMap, "test1"))
 
         observableOut
             .test()
             .assertValues(0, 1, 2, 3, 4)
-
-        
     }
 
 
@@ -182,18 +200,6 @@ class PersistentReplayRelayKtTest {
 
 
     @Test
-    fun perRep() {
-
-        Observable.range(0, 4)
-            .subscribe()
-
-
-        Observable.range(0, 4)
-            .subscribe()
-
-    }
-
-    @Test
     fun reactiveCache_perservesData() {
         val cacheDir = File("./build/test/reactiveCache")
         cacheDir.mkdirs()
@@ -212,7 +218,6 @@ class PersistentReplayRelayKtTest {
                 .concatWith(Observable.range(0, 5))
                 .toList()
                 .compose(cacheProvider.replace())
-                .doOnSuccess { println(it) }
                 .subscribe()
 
         val rangeDisposable2 =
@@ -222,7 +227,6 @@ class PersistentReplayRelayKtTest {
                 .concatWith(Observable.range(0, 5))
                 .toList()
                 .compose(cacheProvider.replace())
-                .doOnSuccess { println(it) }
                 .test()
                 .assertValue(arrayListOf(1, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4))
                 .assertValueCount(1)
