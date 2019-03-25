@@ -1,20 +1,21 @@
 package org.oelab.octopusengine.octolabapp.ui.rgb
 
 import android.content.Context
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.doOnLayout
-import androidx.lifecycle.ViewModelProviders
 import com.jakewharton.rxbinding3.view.clicks
 import com.jakewharton.rxbinding3.widget.checkedChanges
-import com.jakewharton.rxrelay2.BehaviorRelay
+import com.jakewharton.rxbinding3.widget.textChanges
 import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import com.skydoves.colorpickerview.sliders.AlphaSlideBar
@@ -51,24 +52,11 @@ class RGBActivity : AppCompatActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d(TAG, "onCreate() called with: savedInstanceState = [$savedInstanceState]")
         super.onCreate(savedInstanceState)
         setContentView(R.layout.rgb_activity)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        val viewModel = ViewModelProviders.of(this).get(RGBViewModel::class.java)
-
-//
-//        viewModel.fabReplay
-//            .take(1)
-//            .subscribeBy { rgbDeviceState ->
-//                subscribeRGBDeviceLayout(
-//                    addRgbDeviceLayout(contentLinearLayout, this),
-//                    rgbDeviceState
-//                )
-//
-//            }.addTo(subscriptions)
-
 
         val appScopeMap = (this.application as App).scope
 
@@ -96,8 +84,8 @@ class RGBActivity : AppCompatActivity() {
     }
 
     private fun addRgbDeviceLayout(linearLayout: LinearLayout, context: Context?): View {
-        val view = View.inflate(context, R.layout.rgb_remote_single_device, linearLayout)
-//        linearLayout.addView(view)
+        val view = View.inflate(context, R.layout.rgb_remote_single_device, null)
+        linearLayout.addView(view)
         return view
     }
 
@@ -106,49 +94,111 @@ class RGBActivity : AppCompatActivity() {
         rgbDeviceState: RgbDeviceState,
         appScopeMap: HashMap<String, Any>
     ) {
+        Log.d(
+            TAG, Thread.currentThread().name + " ### "
+                    + "subscribeRGBDeviceLayout() called with: view = [$view], rgbDeviceState = [$rgbDeviceState], appScopeMap = [$appScopeMap]"
+        )
 
-        val toggleConnectionButton = view.toggleConnectionButton
-        val udpIpAddress = view.udpIpAddressEditText
-        val udpPortEdit = view.udpPortEditText
-        val brightnessSlideBar = view.brightnessSlide
-        val colorPickerView = view.colorPickerView
-        val alphaSlideBar = view.alphaSlideBar
+        val _toggleConnectionButton = view.toggleConnectionButton
+        val _udpIpAddressView = view.udpIpAddressEditText
+        val _udpPortEditView = view.udpPortEditText
+        val _brightnessSlideBarView = view.brightnessSlide
+        val _colorPickerView = view.colorPickerView
+        val _alphaSlideBarView = view.alphaSlideBar
+
+        toggleConnectionButton.clicks()
+            .map { toggleConnectionButton.isChecked }
+            .compose(persistState(
+                scopeMap = appScopeMap,
+                storedItemsMaxCount = 1,
+                storageId = "toggleConnectionButton${rgbDeviceState.id}",
+                restoreState = { observable ->
+                    observable
+                        .last(false)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeBy { toggleConnectionButton.isChecked = it }
+                }
+            )).subscribe()
+            .addTo(subscriptions)
+
+        _udpIpAddressView.textChanges()
+            .skipInitialValue()
+            .compose(persistState(
+                scopeMap = appScopeMap,
+                storedItemsMaxCount = 1,
+                storageId = "udpIpAddressView${rgbDeviceState.id}",
+                restoreState = { observable ->
+                    observable
+                        .last("")
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeBy { _udpIpAddressView.setText(it) }
+                }
+            )).subscribe()
+            .addTo(subscriptions)
+
+        _udpPortEditView.textChanges()
+            .skipInitialValue()
+            .compose(persistState(
+                scopeMap = appScopeMap,
+                storedItemsMaxCount = 1,
+                storageId = "udpPortEditView${rgbDeviceState.id}",
+                restoreState = { observable ->
+                    observable
+                        .last("")
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeBy { _udpPortEditView.setText(it) }
+                }
+            )).subscribe()
+            .addTo(subscriptions)
 
 
         val rgbPickerEvent =
-            createRgbPickerSubject(brightnessSlideBar, colorPickerView, alphaSlideBar)
+            createRgbPickerSubject(_brightnessSlideBarView, _colorPickerView, _alphaSlideBarView)
+                .share()
 
-        colorPickerView.fireColorListener(0xff0000, false)
+        rgbPickerEvent
+            .compose(
+                persistState(
+                    scopeMap = appScopeMap,
+                    storageId = "rgbPickerEvent${rgbDeviceState.id}",
+                    storedItemsMaxCount = 1,
+                    restoreState = { observable ->
+                        observable.last(ColorPickerState(pureColor = Color.WHITE, brightnessSliderSelectedX =))
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribeBy {
+                                setColorPickerViewColor(it, _colorPickerView)
+                            }
+                            .addTo(subscriptions)
+                    }
+                )
+            ).subscribe()
+            .addTo(subscriptions)
 
-        val rgbPickerSaveState =
-            rgbPickerEvent
-                .compose(
-                    persistState<RGB>(
-                        appScopeMap,
-                        storageId = "rgbPicker${rgbDeviceState.id}",
-                        storedItemsMaxCount = 1,
-                        restoreState = { restore: Observable<RGB> ->
-                            restore
-                                .last(RGB())
-                                .observeOn(AndroidSchedulers.mainThread())
-                                .subscribeBy{ colorPickerView.fireColorListener(it.toIntColor(), false) }.addTo(subscriptions)
-                        }
-                    )
-                ).subscribe()
-                .addTo(subscriptions)
 
-
-        val checkFieldsAndToggleConnection = toggleConnectionButton
+        val checkFieldsAndToggleConnection = _toggleConnectionButton
             .checkedChanges()
+            .skipInitialValue()
             .subscribeOn(AndroidSchedulers.mainThread())
             .map {
                 ToggleConnectionEvent(
-                    toggleConnectionButton.isChecked,
-                    udpIpAddress.text.toString().trim(),
-                    udpPortEdit.text.toString().trim()
+                    _toggleConnectionButton.isChecked,
+                    _udpIpAddressView.text.toString().trim(),
+                    _udpPortEditView.text.toString().trim()
                 )
             }
-            .doOnNext { event: ToggleConnectionEvent -> enableUdpFields(!event.buttonOn) }
+            .compose(
+                persistState(
+                    scopeMap = appScopeMap,
+                    storageId = "toggleConnection${rgbDeviceState.id}"
+                )
+            )
+            .doOnNext { event: ToggleConnectionEvent ->
+                enableUdpFields(
+                    !event.buttonOn,
+                    _udpIpAddressView,
+                    _udpPortEditView
+                )
+            }
             .observeOn(Schedulers.io())
             .compose(checkUdpFields())
             .publish()
@@ -157,10 +207,10 @@ class RGBActivity : AppCompatActivity() {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
                 onNext = { model: CheckedUdpFieldsUIModel ->
-                    showUdpIpAddressError(model.validIPAddress)
-                    showUdpPortError(model.validPort)
+                    showUdpIpAddressError(model.validIPAddress, _udpIpAddressView)
+                    showUdpPortError(model.validPort, _udpPortEditView)
 
-                    if (model.toggleEvent.buttonOn && (!model.validIPAddress || !model.validPort)) toggleConnectionButton.isChecked =
+                    if (model.toggleEvent.buttonOn && (!model.validIPAddress || !model.validPort)) _toggleConnectionButton.isChecked =
                         false
 
                     Log.d("subscribe model", "${Thread.currentThread()}")
@@ -173,14 +223,14 @@ class RGBActivity : AppCompatActivity() {
 
         val broadcastRgbViaUdpEvent = checkFieldsAndToggleConnection
             .observeOn(Schedulers.io())
-            .compose(broadcastRgbViaUdp(rgbPickerEvent, socket, Schedulers.io()))
+            .compose(broadcastRgbViaUdp(rgbPickerEvent.map { it.rgb }, socket, Schedulers.io()))
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeBy(
                 onNext = { model: BroadcastModel ->
                     when (model) {
                         is OpenSocketErrorModel -> {
                             showMessage("Error! Connot open communication. Check permissions")
-                            toggleConnectionButton.isChecked = false
+                            _toggleConnectionButton.isChecked = false
                         }
                         is SendErrorModel -> {
                             showMessage("Error cannot send data!")
@@ -197,25 +247,57 @@ class RGBActivity : AppCompatActivity() {
         checkFieldsAndToggleConnection.connect().addTo(subscriptions)
     }
 
+    private fun setColorPickerViewColor(
+        it: ColorPickerState,
+        _colorPickerView: ColorPickerView
+    ) {
+        Log.d(
+            TAG, Thread.currentThread().name + " ### "
+                    + "setColorPickerViewColor() called with: it = [$it], _colorPickerView = [$_colorPickerView]"
+        )
+        if (it.selectorX == ColorPickerState.CENTER_COLOR_PICKER_SELECTOR){
+            setColorPickerDefaultValue(_colorPickerView)
+        }else{
+            _colorPickerView.setSelectorPoint(it.selectorX,it.selectorY)
+            _colorPickerView.setCoordinate(it.selectorX,it.selectorY)
+            _colorPickerView.pureColor = it.pureColor
+            _colorPickerView.brightnessSlider.selectedX = it.brightnessSliderSelectedX
+        }
+        _colorPickerView.fireColorListener(it.rgb.toIntColor(), false)
+    }
+
+    private fun setColorPickerDefaultValue(_colorPickerView: ColorPickerView) {
+        _colorPickerView.selectCenter()
+        _colorPickerView.pureColor = Color.WHITE
+    }
+
     private fun createRgbPickerSubject(
-        brightnessSlideBar: BrightnessSlideBar,
-        colorPickerView: ColorPickerView,
-        alphaSlideBar: AlphaSlideBar
-    ): Observable<RGB> {
-        brightnessSlideBar.setOnTouchListener(DisableScrollOnTouchListener(brightnessSlideBar))
-        colorPickerView.setOnTouchListener(DisableScrollOnTouchListener(colorPickerView))
-        colorPickerView.attachBrightnessSlider(brightnessSlideBar)
-        colorPickerView.attachAlphaSlider(alphaSlideBar) // not used but crashes without
-        colorPickerView.setLifecycleOwner(this)
-        val rgbPickerSubject = BehaviorSubject.create<RGB>()
-        colorPickerView.setColorListener(
+        _brightnessSlideBar: BrightnessSlideBar,
+        _colorPickerView: ColorPickerView,
+        _alphaSlideBar: AlphaSlideBar
+    ): Observable<ColorPickerState> {
+        _brightnessSlideBar.setOnTouchListener(DisableScrollOnTouchListener(_brightnessSlideBar))
+        _colorPickerView.setOnTouchListener(DisableScrollOnTouchListener(_colorPickerView))
+        _colorPickerView.attachBrightnessSlider(_brightnessSlideBar)
+        _colorPickerView.attachAlphaSlider(_alphaSlideBar) // not used but crashes without
+        setColorPickerDefaultValue(_colorPickerView)
+        val rgbPickerSubject = BehaviorSubject.create<ColorPickerState>()
+        _colorPickerView.setColorListener(
             ColorEnvelopeListener { envelope, fromUser ->
                 rgbPickerSubject.onNext(
-                    RGB(
-                        envelope.argb[1],
-                        envelope.argb[2],
-                        envelope.argb[3]
+                    ColorPickerState(
+                        RGB(
+                            envelope.argb[1],
+                            envelope.argb[2],
+                            envelope.argb[3]
+                        ),
+                        _colorPickerView.selectedPoint.x,
+                        _colorPickerView.selectedPoint.y,
+                        _colorPickerView.pureColor,
+                        _colorPickerView.brightnessSlider.selectedX
+
                     )
+
                 )
             })
 
@@ -223,15 +305,28 @@ class RGBActivity : AppCompatActivity() {
 
     }
 
-
-    private fun showUdpPortError(isValid: Boolean) {
-        if (!isValid) udpPortEditText.error =
-            "Invalid port number 0-65535" else udpPortEditText.error = null
+    data class ColorPickerState(
+        val rgb: RGB = RGB(),
+        val selectorX: Int = CENTER_COLOR_PICKER_SELECTOR,
+        val selectorY: Int = CENTER_COLOR_PICKER_SELECTOR,
+        val pureColor: Int = Color.WHITE,
+        val brightnessSliderSelectedX: Int = 0
+    ){
+        companion object {
+            const val CENTER_COLOR_PICKER_SELECTOR = -999
+        }
     }
 
-    private fun showUdpIpAddressError(isValid: Boolean) {
-        if (!isValid) udpIpAddressEditText.error =
-            "Invalid IP address format xxx.xxx.xxx.xxx" else udpIpAddressEditText.error = null
+
+
+    private fun showUdpPortError(isValid: Boolean, udpPortView: EditText) {
+        if (!isValid) udpPortView.error =
+            "Invalid port number 0-65535" else udpPortView.error = null
+    }
+
+    private fun showUdpIpAddressError(isValid: Boolean, udpIpAddressView: EditText) {
+        if (!isValid) udpIpAddressView.error =
+            "Invalid IP address format xxx.xxx.xxx.xxx" else udpIpAddressView.error = null
     }
 
 
@@ -273,9 +368,13 @@ class RGBActivity : AppCompatActivity() {
         ).show()
     }
 
-    private fun enableUdpFields(enable: Boolean) {
-        udpIpAddressEditText.isEnabled = enable
-        udpPortEditText.isEnabled = enable
+    private fun enableUdpFields(
+        enable: Boolean,
+        _udpIpAddressView: EditText,
+        _udpPortEditView: EditText
+    ) {
+        _udpIpAddressView.isEnabled = enable
+        _udpPortEditView.isEnabled = enable
     }
 
 
@@ -284,17 +383,14 @@ class RGBActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+    companion object {
+        val TAG = RGBActivity::class.simpleName
+    }
+
 }
 
 
 data class RgbDeviceState(
     val id: Int,
     val rgb: RGB = RGB()
-) {
-    val rgbEventRelay: BehaviorRelay<RGB> = BehaviorRelay.create()
-
-}
-
-
-data class State(val rgbDeviceStates: ArrayList<RgbDeviceState>) {
-}
+)

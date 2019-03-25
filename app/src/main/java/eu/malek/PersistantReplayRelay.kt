@@ -4,6 +4,7 @@ import com.jakewharton.rxrelay2.ReplayRelay
 import io.reactivex.Observable
 import io.reactivex.ObservableTransformer
 import io.reactivex.disposables.Disposable
+import io.reactivex.subjects.ReplaySubject
 import java.util.HashMap
 
 
@@ -41,9 +42,13 @@ fun <T> persistState(
     { from: Observable<T> ->
         val restored: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
 
+
+
         var disposable: Disposable? = null
-        if (restoreState != null) restoreState.invoke(restored.doOnComplete { disposable = from.subscribe(restored) })
-        else  disposable = from.subscribe(restored)
+        if (restoreState != null && restored.values.isNotEmpty()) restoreState.invoke(
+            ReplaySubject.fromArray<T>(*restored.values as Array<T>)
+                .doOnComplete { disposable = from.subscribe(restored) })
+        else disposable = from.subscribe(restored)
 
         val stream = getStream(scopeMap, storageId) { restored }
         stream.doOnDispose { disposable?.dispose() }

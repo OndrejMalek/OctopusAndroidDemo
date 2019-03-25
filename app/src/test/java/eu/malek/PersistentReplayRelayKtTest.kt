@@ -15,10 +15,10 @@ import java.io.File
 class PersistentReplayRelayKtTest {
 
     @Test
-    fun persistState_restoresState() {
+    fun persistState_restoresState_subscribed() {
         val scopeMap = HashMap<String, Any>()
 
-        var stateFirst: Int? = null
+        var stateFirst: Int? = 999
         val disposable = Observable.range(0, 5)
             .compose(
                 persistState(
@@ -37,7 +37,33 @@ class PersistentReplayRelayKtTest {
                 )
             )
             .test()
-            .assertOf({stateFirst == 9})
+            .assertOf({ assertThat(stateFirst).isEqualTo(4) })
+    }
+
+    @Test
+    fun persistState_restoresState_keepsValues() {
+        val scopeMap = HashMap<String, Any>()
+
+        var stateFirst: Int? = 999
+        val disposable = Observable.range(0, 5)
+            .compose(
+                persistState(
+                    scopeMap = scopeMap,
+                    storageId = "test1",
+                    restoreState = { restore -> restore.subscribeBy { stateFirst = it } })
+            ).subscribe()
+        disposable.dispose()
+
+        val disposableRestores = Observable.range(5, 5)
+            .compose(
+                persistState(
+                    scopeMap = scopeMap,
+                    storageId = "test1",
+                    restoreState = { restore -> restore.subscribeBy { stateFirst = it } }
+                )
+            )
+            .test()
+            .assertValues(0,1,2,3,4,5,6,7,8,9)
     }
 
     @Test
