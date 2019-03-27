@@ -42,6 +42,10 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+
+    implementation project(':ColorPickerView:colorpickerview')
+//    implementation 'com.github.skydoves:colorpickerview:2.1.1'
+
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'androidx.appcompat:appcompat:1.1.0-alpha01'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.0-alpha2'
@@ -49,10 +53,11 @@ dependencies {
     implementation 'com.google.android.material:material:1.1.0-alpha03'
     implementation 'com.android.support:design:28.0.0'
     testImplementation 'junit:junit:4.12'
+
     /*
-                testImplementation "org.mockito:mockito-core:2.23.4"
-                androidTestImplementation "org.mockito:mockito-android:2.23.4"
-                */
+                    testImplementation "org.mockito:mockito-core:2.23.4"
+                    androidTestImplementation "org.mockito:mockito-android:2.23.4"
+                    */
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
     implementation 'com.jakewharton.rxbinding3:rxbinding-core:3.0.0-alpha2'
@@ -64,54 +69,72 @@ dependencies {
     testImplementation 'io.mockk:mockk:1.9'
     testImplementation 'com.google.truth:truth:0.42'
     implementation 'org.apache.commons:commons-lang3:3.8.1'
-//    implementation 'nl.littlerobots.rxlint:rxlint:1.7.2'
+
+    //    implementation 'nl.littlerobots.rxlint:rxlint:1.7.2'
     implementation 'org.sufficientlysecure:html-textview:3.6'
 
-    implementation "com.github.skydoves:colorpickerview:2.1.1"
-
-
     def lifecycle_version = "2.0.0"
-
     // ViewModel and LiveData
     implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
+
     // alternatively - just ViewModel
-    implementation "androidx.lifecycle:lifecycle-viewmodel:$lifecycle_version" // For Kotlin use lifecycle-viewmodel-ktx
+    implementation "androidx.lifecycle:lifecycle-viewmodel:$lifecycle_version"
+
+    // For Kotlin use lifecycle-viewmodel-ktx
+
     // alternatively - just LiveData
     implementation "androidx.lifecycle:lifecycle-livedata:$lifecycle_version"
+
     // alternatively - Lifecycles only (no ViewModel or LiveData). Some UI
+
     //     AndroidX libraries use this lightweight import for Lifecycle
     implementation "androidx.lifecycle:lifecycle-runtime:$lifecycle_version"
-    annotationProcessor "androidx.lifecycle:lifecycle-compiler:$lifecycle_version" // For Kotlin use kapt instead of annotationProcessor
+    annotationProcessor "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
+
+    // For Kotlin use kapt instead of annotationProcessor
+
     // alternately - if using Java8, use the following instead of lifecycle-compiler
     implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycle_version"
+
     // optional - ReactiveStreams support for LiveData
-    implementation "androidx.lifecycle:lifecycle-reactivestreams:$lifecycle_version" // For Kotlin use lifecycle-reactivestreams-ktx
+    implementation "androidx.lifecycle:lifecycle-reactivestreams:$lifecycle_version"
+
+    // For Kotlin use lifecycle-reactivestreams-ktx
+
     // optional - Test helpers for LiveData
     testImplementation "androidx.arch.core:core-testing:$lifecycle_version"
 
+    //    implementation "com.squareup.sqldelight:android-driver:1.1.1"
 
+    //    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'org.jetbrains.anko:anko-commons:0.10.5'
+    implementation 'org.jetbrains.anko:anko-design:0.10.4'
+    implementation 'org.jetbrains.anko:anko-sdk25:0.10.5'
 
-//    implementation "com.squareup.sqldelight:android-driver:1.1.1"
-//    implementation 'androidx.multidex:multidex:2.0.1'
+    //    implementation "com.chibatching.kotpref:kotpref:2.5.0"
 
-    implementation "org.jetbrains.anko:anko-commons:0.10.5"
-    implementation "org.jetbrains.anko:anko-design:0.10.4"
-    implementation "org.jetbrains.anko:anko-sdk25:0.10.5"
-//    implementation "com.chibatching.kotpref:kotpref:2.5.0"
-//    implementation "com.chibatching.kotpref:initializer:2.5.0"
+    //    implementation "com.chibatching.kotpref:initializer:2.5.0"
 
-//    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
-//    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.3.0'
-//    implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+    //    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
 
-//    implementation "androidx.room:room-runtime:2.1.0-alpha01"
-//    annotationProcessor "androidx.room:room-compiler:2.1.0-alpha01"
-//    kapt "androidx.room:room-compiler:2.1.0-alpha01"
-//
-//    implementation 'com.google.code.gson:gson:2.8.5'
-//    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
-//    implementation 'com.github.bumptech.glide:glide:4.8.0'
-//    implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
+    //    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.3.0'
 
+    //    implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+
+    //    implementation "androidx.room:room-runtime:2.1.0-alpha01"
+
+    //    annotationProcessor "androidx.room:room-compiler:2.1.0-alpha01"
+
+    //    kapt "androidx.room:room-compiler:2.1.0-alpha01"
+
+    //
+
+    //    implementation 'com.google.code.gson:gson:2.8.5'
+
+    //    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
+
+    //    implementation 'com.github.bumptech.glide:glide:4.8.0'
+
+    //    implementation 'com.davemorrissey.labs:subsampling-scale-image-view:3.10.0'
     implementation 'com.jakewharton.rxrelay2:rxrelay:2.1.0'
 }

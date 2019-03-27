@@ -8,6 +8,8 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/ColorPickerView" />
+            <option value="$PROJECT_DIR$/ColorPickerView/colorpickerview" />
             <option value="$PROJECT_DIR$/app" />
           </set>
         </option>

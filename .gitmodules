@@ -1,0 +1,3 @@
+[submodule "ColorPickerView"]
+	path = ColorPickerView
+	url = git@github.com:OndrejMalek/ColorPickerView.git
