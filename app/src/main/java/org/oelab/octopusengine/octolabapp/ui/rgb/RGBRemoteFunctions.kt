@@ -100,9 +100,9 @@ fun broadcastRgbViaUdp(
             .filter { model -> model !is SentRGBModel }
     }
 
-private fun stopSendingRgb() = Observable.empty<BroadcastModel>()
+fun stopSendingRgb() = Observable.empty<BroadcastModel>()
 
-private fun startSendingRgbViaUdpOnErrorRetry(
+fun startSendingRgbViaUdpOnErrorRetry(
     rgbEventSource: Observable<RGB>,
     scheduler: Scheduler,
     socket: IUdpSocket,
@@ -129,7 +129,7 @@ private fun startSendingRgbViaUdpOnErrorRetry(
         }
 }
 
-private fun ifButtonOnOpenSocket(
+fun ifButtonOnOpenSocket(
     checkedFieldsEvent: Observable<CheckedUdpFieldsUIModel>,
     scheduler: Scheduler,
     socket: IUdpSocket
@@ -148,7 +148,7 @@ private fun ifButtonOnOpenSocket(
         })
 }
 
-private fun ifButtonOffCloseSocket(
+fun ifButtonOffCloseSocket(
     checkedFieldsEvent: Observable<CheckedUdpFieldsUIModel>,
     scheduler: Scheduler,
     socket: IUdpSocket
@@ -192,3 +192,8 @@ fun sendRGB(
     return redMessage + greenMessage + blueMessage
 }
 
+
+fun index(start: Int = 0): (Observable<*>) -> Observable<Int> = {
+    it.map { start }
+        .scan({ index, _ -> index + 1 })
+}

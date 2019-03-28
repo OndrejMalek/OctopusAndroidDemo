@@ -62,23 +62,23 @@ class RGBActivity : AppCompatActivity() {
                     storedItemsMaxCount = INFINITE_SIZE
                 )
             )
-            .map { 0 }
-            .scan({ index, _ -> index + 1 })
-            .map { RgbDeviceState(it) }
+            .compose(index(0))
             .subscribeBy(
-                onNext = { rgbDeviceState ->
-                    addRgbDeviceView(rgbDeviceState, appScopeMap)
+                onNext = { index ->
+                    addRgbDeviceView(index, appScopeMap)
                 }
             ).addTo(subscriptions)
     }
 
+
+
     private fun addRgbDeviceView(
-        rgbDeviceState: RgbDeviceState,
+        deviceIndex: Int,
         appScopeMap: HashMap<String, Any>
     ) {
         Log.d(
             TAG, Thread.currentThread().name + " ### "
-                    + "addRgbDeviceView() called with: rgbDeviceState = [$rgbDeviceState], appScopeMap = [$appScopeMap]"
+                    + "addRgbDeviceView() called with: deviceIndex = [$deviceIndex], appScopeMap = [$appScopeMap]"
         )
 
         val rgbDeviceLayout = addRgbDeviceLayout(contentLinearLayout, this)
@@ -96,7 +96,7 @@ class RGBActivity : AppCompatActivity() {
         saveAndRestoreViewState(
             rgbDeviceLayout.toggleConnectionButton,
             appScopeMap,
-            rgbDeviceState,
+            deviceIndex,
             rgbDeviceLayout.udpIpAddressEditText,
             rgbDeviceLayout.udpPortEditText,
             rgbPickerChangedStream,
@@ -158,6 +158,7 @@ class RGBActivity : AppCompatActivity() {
 
                 onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
             ).addTo(subscriptions)
+
     }
 
 
@@ -170,7 +171,7 @@ class RGBActivity : AppCompatActivity() {
     private fun saveAndRestoreViewState(
         _toggleConnectionButton: ToggleButton,
         appScopeMap: HashMap<String, Any>,
-        rgbDeviceState: RgbDeviceState,
+        deviceIndex: Int,
         _udpIpAddressView: EditText,
         _udpPortEditView: EditText,
         rgbPickerEvent: Observable<ColorPickerState>,
@@ -181,7 +182,7 @@ class RGBActivity : AppCompatActivity() {
             .map { _toggleConnectionButton.isChecked }
             .compose(persistState(
                 scopeMap = appScopeMap,
-                storageId = "toggleConnectionButton${rgbDeviceState.id}",
+                storageId = "toggleConnectionButton${deviceIndex}",
                 restoreState = { observable ->
                     observable
                         .lastElement()
@@ -199,7 +200,7 @@ class RGBActivity : AppCompatActivity() {
             .compose(
                 persistSingleStateOfView(
                     appScopeMap,
-                    "udpIpAddressView${rgbDeviceState.id}",
+                    "udpIpAddressView${deviceIndex}",
                     { text -> _udpIpAddressView.setText(text) },
                     "" as CharSequence
                 )
@@ -211,7 +212,7 @@ class RGBActivity : AppCompatActivity() {
             .skipInitialValue()
             .compose(persistState(
                 scopeMap = appScopeMap,
-                storageId = "udpPortEditView${rgbDeviceState.id}",
+                storageId = "udpPortEditView${deviceIndex}",
                 restoreState = { observable ->
                     observable
                         .lastElement()
@@ -225,7 +226,7 @@ class RGBActivity : AppCompatActivity() {
             .compose(
                 persistState(
                     scopeMap = appScopeMap,
-                    storageId = "rgbPickerEvent${rgbDeviceState.id}",
+                    storageId = "rgbPickerEvent${deviceIndex}",
 
                     restoreState = { observable ->
                         observable.lastElement()
@@ -262,21 +263,6 @@ class RGBActivity : AppCompatActivity() {
         )
     }
 
-    fun setColorPickerState(
-        it: ColorPickerState,
-        _colorPickerView: ColorPickerView
-    ) {
-        Log.d(
-            TAG, Thread.currentThread().name + " ### "
-                    + "setColorPickerViewColor() called with: it = [$it], _colorPickerView = [$_colorPickerView]"
-        )
-        if (it.selectorX == ColorPickerState.CENTER_COLOR_PICKER_SELECTOR) {
-            setColorPickerState(_colorPickerView, ColorPickerState())
-        } else {
-            setColorPickerState(_colorPickerView, it)
-        }
-
-    }
 
 
     private fun showUdpPortError(isValid: Boolean, udpPortView: EditText) {
@@ -348,9 +334,3 @@ class RGBActivity : AppCompatActivity() {
     }
 
 }
-
-
-data class RgbDeviceState(
-    val id: Int,
-    val rgb: RGB = RGB()
-)

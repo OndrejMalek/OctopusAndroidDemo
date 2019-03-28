@@ -1,6 +1,7 @@
 package org.oelab.octopusengine.octolabapp.ui.rgb
 
 import android.graphics.Color
+import android.util.Log
 import com.skydoves.colorpickerview.ColorPickerView
 import com.skydoves.colorpickerview.listeners.ColorEnvelopeListener
 import com.skydoves.colorpickerview.sliders.AlphaSlideBar
@@ -26,15 +27,16 @@ data class ColorPickerState(
 
 
 fun setColorPickerState(
-    cp: ColorPickerView,
-    it: ColorPickerState
+    state: ColorPickerState,
+    cp: ColorPickerView
 ) {
-    cp.brightnessSlider.brightness = it.brightness
-    cp.pureColor = it.pureColor
-    cp.setSelectorPoint(it.selectorX, it.selectorY)
-    cp.setCoordinate(it.selectorX, it.selectorY)
-    cp.fireColorListener(it.rgb.toIntColor(), false)
+    cp.brightnessSlider.brightness = state.brightness
+    cp.pureColor = state.pureColor
+    cp.setSelectorPoint(state.selectorX, state.selectorY)
+    cp.setCoordinate(state.selectorX, state.selectorY)
+    cp.fireColorListener(state.rgb.toIntColor(), false)
 }
+
 
 fun createRgbPickerSubject(
     bsb: BrightnessSlideBar,
@@ -45,7 +47,7 @@ fun createRgbPickerSubject(
     cp.setOnTouchListener(DisableScrollOnTouchListener(cp))
     cp.attachBrightnessSlider(bsb)
     cp.attachAlphaSlider(_alphaSlideBar) // not used but crashes without
-    setColorPickerState(cp, ColorPickerState())
+    setColorPickerState(ColorPickerState(),cp)
 
     val rgbPickerSubject = BehaviorSubject.create<ColorPickerState>()
     cp.setColorListener(
