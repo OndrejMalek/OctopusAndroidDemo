@@ -5,7 +5,8 @@ import io.reactivex.Observable
 import io.reactivex.subjects.ReplaySubject
 import org.junit.Test
 
-class RxTest{
+class RxTest {
+
 
     @Test
     fun replayRelay_ReplaysAfterSourceCompleteOrDispose() {
@@ -20,7 +21,7 @@ class RxTest{
         val range2Disposable = range2.subscribe(replay)
         range2Disposable.dispose()
 
-        replay.test().assertValueCount( 3 + 4)
+        replay.test().assertValueCount(3 + 4)
 
         disposable1.dispose()
         disposable2.dispose()

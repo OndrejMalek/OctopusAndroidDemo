@@ -2,6 +2,7 @@ package org.oelab.octopusengine.octolabapp.ui.rgb
 
 import io.reactivex.Observable
 import io.reactivex.Scheduler
+import io.reactivex.schedulers.Schedulers
 
 fun checkUdpFields(): (Observable<ToggleConnectionEvent>) -> Observable<CheckedUdpFieldsUIModel> =
     { from ->
@@ -28,8 +29,7 @@ interface BroadcastModel
 data class OpenSocketErrorModel(val value: Unit = Unit) : BroadcastModel
 data class ClosedSocketModel(val value: Unit = Unit) : BroadcastModel
 data class SendErrorModel(val value: Unit = Unit) : BroadcastModel
-data class OpenSocketModel(val checkedModel: CheckedUdpFieldsUIModel) :
-    BroadcastModel
+data class OpenedSocketModel(val checkedModel: CheckedUdpFieldsUIModel) : BroadcastModel
 
 data class SentRGBModel(
     val rgb: RGB? = RGB(),
@@ -43,11 +43,30 @@ data class CheckedUdpFieldsUIModel(
     val toggleEvent: ToggleConnectionEvent = ToggleConnectionEvent()
 )
 
+fun createRgbDeviceStream(
+    toggleConnectionButtonChangedEvent: Observable<ToggleConnectionEvent>,
+    rgbPickerChangedStream: Observable<ColorPickerState>
+): Observable<Any> {
+    val udpFieldsCheckedEvent = toggleConnectionButtonChangedEvent
+        .observeOn(Schedulers.io())
+        .compose(checkUdpFields())
+        .share()
+
+    val broadcastRGBVieUdpEvent = udpFieldsCheckedEvent
+        .compose(broadcastRgbViaUdp(rgbPickerChangedStream.map { it.rgb }, UdpSocket(), Schedulers.io()))
+
+    return Observable.mergeDelayError(
+        toggleConnectionButtonChangedEvent,
+        udpFieldsCheckedEvent,
+        broadcastRGBVieUdpEvent
+    )
+}
+
 fun broadcastRgbViaUdp(
     rgbEventSource: Observable<RGB>,
     socket: IUdpSocket,
     scheduler: Scheduler
-): (Observable<CheckedUdpFieldsUIModel>) -> Observable<SentRGBModel> =
+): (Observable<CheckedUdpFieldsUIModel>) -> Observable<BroadcastModel> =
     { from: Observable<CheckedUdpFieldsUIModel> ->
         val checkedFieldsEvent
                 = from.observeOn(scheduler)
@@ -66,7 +85,7 @@ fun broadcastRgbViaUdp(
             .observeOn(scheduler)
             .switchMap { broadcastModel ->
                 when (broadcastModel) {
-                    is OpenSocketModel -> {
+                    is OpenedSocketModel -> {
                         startSendingRgbViaUdpOnErrorRetry(rgbEventSource, scheduler, socket, broadcastModel)
                     }
                     is ClosedSocketModel, is OpenSocketErrorModel -> {stopSendingRgb()}
@@ -77,9 +96,8 @@ fun broadcastRgbViaUdp(
 
             }
 
-        Observable.merge(ifButtonOnSocketOpenedStream, broadcastRgbViaUdpStream, ifButtonOffSocketClosedStream)
+        Observable.mergeDelayError<BroadcastModel>(ifButtonOnSocketOpenedStream, broadcastRgbViaUdpStream, ifButtonOffSocketClosedStream)
             .filter { model -> model !is SentRGBModel }
-            .cast(SentRGBModel::class.java)
     }
 
 private fun stopSendingRgb() = Observable.empty<BroadcastModel>()
@@ -88,7 +106,7 @@ private fun startSendingRgbViaUdpOnErrorRetry(
     rgbEventSource: Observable<RGB>,
     scheduler: Scheduler,
     socket: IUdpSocket,
-    broadcastModel: OpenSocketModel
+    broadcastModel: OpenedSocketModel
 ): Observable<BroadcastModel>? {
     return rgbEventSource
         .observeOn(scheduler)
@@ -122,7 +140,7 @@ private fun ifButtonOnOpenSocket(
         .filter { checkedModel -> checkedModel.validIPAddress && checkedModel.validPort }
         .map { checkedModel ->
             socket.open()
-            OpenSocketModel(checkedModel = checkedModel) as BroadcastModel
+            OpenedSocketModel(checkedModel = checkedModel) as BroadcastModel
         }
         .onErrorResumeNext(Observable.fromCallable {
             socket.close()
@@ -138,7 +156,6 @@ private fun ifButtonOffCloseSocket(
     return checkedFieldsEvent
         .observeOn(scheduler)
         .filter { !it.toggleEvent.buttonOn }
-        .skip(1L)
         .map {
             socket.close()
             ClosedSocketModel()

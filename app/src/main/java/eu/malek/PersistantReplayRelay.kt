@@ -8,11 +8,11 @@ import io.reactivex.subjects.ReplaySubject
 import java.util.HashMap
 
 
-const val INFINITE = -1
+const val INFINITE_SIZE = -1
 
 fun <T> persistentReplay(
     storageId: String,
-    storedItemsMaxCount: Int = INFINITE,
+    storedItemsMaxCount: Int = 1,
     scopeMap: HashMap<String, Any>
 ): (Observable<T>) -> Observable<T> =
     { from ->
@@ -25,7 +25,7 @@ fun <T> persistentReplay(
 fun <T> persistState(
     scopeMap: HashMap<String, Any>,
     storageId: String,
-    storedItemsMaxCount: Int = INFINITE,
+    storedItemsMaxCount: Int = 1,
     restoreState: ((Observable<T>) -> Unit)? = null
 ): (Observable<T>) -> Observable<T> =
     { from: Observable<T> ->

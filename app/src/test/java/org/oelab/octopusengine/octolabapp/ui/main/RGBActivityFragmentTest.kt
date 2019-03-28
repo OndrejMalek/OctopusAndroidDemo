@@ -45,7 +45,7 @@ class RGBActivityFragmentTest {
     private val green = RGB(0, 255, 0)
 
     @Test
-    fun broadcastRgbViaUdp_noError() {
+    fun broadcastRgbViaUdp_noError_opensSocket() {
         val socket = mockk<IUdpSocket>()
         every { socket.open() }.just(Runs)
 
@@ -58,7 +58,7 @@ class RGBActivityFragmentTest {
             .compose(broadcastRgbViaUdp(rgbEventSource, socket, scheduler))
             .test()
             .assertValues(
-                OpenSocketModel(
+                OpenedSocketModel(
                     checkedModel = validCheckedModel
                 )
             )
@@ -120,28 +120,10 @@ class RGBActivityFragmentTest {
             .test()
             .assertNoErrors()
             .assertValues(
-                OpenSocketModel(
+                OpenedSocketModel(
                     checkedModel = validCheckedModel
                 ),
                 SendErrorModel()
             )
-    }
-
-    @Test
-    fun name() {
-        val shared = Observable.just(1, 2, 3, 4).share()
-
-        var a: Int = 0
-        val share2 = shared.doOnNext {
-            print("shared: $it")
-            a = 10
-        }.share()
-
-        val end = share2.doOnNext {
-            a = 2
-        }
-
-        share2.subscribe()
-        Truth.assertThat(a).isEqualTo(2)
     }
 }
