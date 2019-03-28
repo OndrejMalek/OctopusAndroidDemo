@@ -47,22 +47,22 @@ fun broadcastRgbViaUdp(
     rgbEventSource: Observable<RGB>,
     socket: IUdpSocket,
     scheduler: Scheduler
-): (Observable<CheckedUdpFieldsUIModel>) -> Observable<BroadcastModel> =
+): (Observable<CheckedUdpFieldsUIModel>) -> Observable<SentRGBModel> =
     { from: Observable<CheckedUdpFieldsUIModel> ->
         val checkedFieldsEvent
                 = from.observeOn(scheduler)
             .share()
 
-        val ifButtonOffCloseSocketEvent
+        val ifButtonOffSocketClosedStream
                 = ifButtonOffCloseSocket(checkedFieldsEvent, scheduler, socket)
             .share()
 
-        val ifButtonOnOpenSocketEvent
+        val ifButtonOnSocketOpenedStream
                 = ifButtonOnOpenSocket(checkedFieldsEvent, scheduler, socket)
             .share()
 
-        val broadcastRgbViaUdp
-                = Observable.merge(ifButtonOffCloseSocketEvent, ifButtonOnOpenSocketEvent)
+        val broadcastRgbViaUdpStream
+                = Observable.merge(ifButtonOffSocketClosedStream, ifButtonOnSocketOpenedStream)
             .observeOn(scheduler)
             .switchMap { broadcastModel ->
                 when (broadcastModel) {
@@ -77,9 +77,9 @@ fun broadcastRgbViaUdp(
 
             }
 
-        Observable.merge(ifButtonOnOpenSocketEvent, broadcastRgbViaUdp, ifButtonOffCloseSocketEvent)
+        Observable.merge(ifButtonOnSocketOpenedStream, broadcastRgbViaUdpStream, ifButtonOffSocketClosedStream)
             .filter { model -> model !is SentRGBModel }
-            .cast(BroadcastModel::class.java)
+            .cast(SentRGBModel::class.java)
     }
 
 private fun stopSendingRgb() = Observable.empty<BroadcastModel>()

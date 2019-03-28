@@ -21,17 +21,6 @@ fun <T> persistentReplay(
         relay
     }
 
-fun <T, R> attachToReplayStream(
-    scopeMap: HashMap<String, Any>,
-    observableIn: Observable<T>,
-    storageId: String,
-    storedItemsMaxCount: Int = INFINITE
-): Observable<T> {
-    val relay: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
-    val disposable = observableIn.subscribe(relay)
-
-    return getStream(scopeMap, storageId) { relay.doOnDispose { disposable.dispose() } }
-}
 
 fun <T> persistState(
     scopeMap: HashMap<String, Any>,
@@ -42,15 +31,14 @@ fun <T> persistState(
     { from: Observable<T> ->
         val restored: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
 
-
-
         var disposable: Disposable? = null
         if (restoreState != null && restored.values.isNotEmpty()) restoreState.invoke(
             ReplaySubject.fromArray<T>(*restored.values as Array<T>)
                 .doOnComplete { disposable = from.subscribe(restored) })
         else disposable = from.subscribe(restored)
 
-        val stream = getStream(scopeMap, storageId) { restored }
+//        val stream = getStream(scopeMap, storageId) { restored }
+        val stream = restored
         stream.doOnDispose { disposable?.dispose() }
     }
 

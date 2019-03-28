@@ -1,11 +1,15 @@
 package eu.malek
 
 import com.google.common.truth.Truth.*
+import com.jakewharton.rxrelay2.Relay
 import io.reactivecache2.Provider
 import io.reactivecache2.ReactiveCache
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.subjects.BehaviorSubject
+import io.reactivex.subjects.PublishSubject
+import io.reactivex.subjects.Subject
 import io.victoralbertos.jolyglot.GsonSpeaker
 import org.junit.Ignore
 import org.junit.Test
@@ -15,7 +19,55 @@ import java.io.File
 class PersistentReplayRelayKtTest {
 
     @Test
-    fun persistState_restoresState_subscribed() {
+    fun share() {
+
+
+        val subject = PublishSubject.create<Int>()
+        val observable = Observable.range(1, 3)
+            .concatWith(Observable.range(4, 3))
+            .concatWith(subject)
+//            .materialize()
+
+        subject.onNext(999)
+
+        val disposable = observable
+            .subscribeBy { println(it) }
+        disposable.dispose()
+
+        observable
+            .subscribeBy { println(it) }
+
+        subject.subscribeBy { println(it) }
+    }
+
+    @Test
+    fun persistState_r() {
+        val scopeMap = HashMap<String, Any>()
+
+        var stateFirst: Int? = 999
+        val disposable = Observable.range(0, 5)
+            .compose(
+                persistState(
+                    scopeMap = scopeMap,
+                    storageId = "test1",
+                    restoreState = { restore -> restore.subscribeBy { stateFirst = it } })
+            ).subscribe()
+        disposable.dispose()
+
+        val disposableRestores = Observable.range(5, 5)
+            .compose(
+                persistState(
+                    scopeMap = scopeMap,
+                    storageId = "test1",
+                    restoreState = { restore -> restore.subscribeBy { stateFirst = it } }
+                )
+            )
+            .test()
+            .assertOf({ assertThat(stateFirst).isEqualTo(4) })
+    }
+
+    @Test
+    fun persistState_restoresState_called() {
         val scopeMap = HashMap<String, Any>()
 
         var stateFirst: Int? = 999
