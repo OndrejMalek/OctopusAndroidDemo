@@ -1,15 +1,14 @@
 package eu.malek
 
 import com.google.common.truth.Truth.*
-import com.jakewharton.rxrelay2.Relay
 import io.reactivecache2.Provider
 import io.reactivecache2.ReactiveCache
 import io.reactivex.Observable
+import io.reactivex.Scheduler
 import io.reactivex.Single
 import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.subjects.BehaviorSubject
+import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
-import io.reactivex.subjects.Subject
 import io.victoralbertos.jolyglot.GsonSpeaker
 import org.junit.Ignore
 import org.junit.Test
@@ -17,6 +16,33 @@ import org.junit.Test
 import java.io.File
 
 class PersistentReplayRelayKtTest {
+
+    @Test
+    fun testPersistSingleStateOfView_whenValuesEmitted_doesNotSetDefault() {
+        var restoredState: Int = 999
+        val appScopeMap = HashMap<String, Any>()
+        val LAST_VALUE = 4
+
+        Observable.range(0,5)
+            .compose(persistSingleStateOfView(appScopeMap,"test",{restoredState = it},888) )
+            .test()
+            .assertValues(LAST_VALUE)
+            .assertOf({
+                assertThat(restoredState).isEqualTo(999)
+            })
+    }
+
+    @Test
+    fun testPersistSingleStateOfView_whenValuesNotEmitted_SetDefault() {
+        var restoredState: Int = 999
+        val appScopeMap = HashMap<String, Any>()
+
+        Observable.empty<Int>()
+            .compose(persistSingleStateOfView(appScopeMap,"test",{restoredState = it},888, Schedulers.trampoline()) )
+            .test()
+
+        assertThat(restoredState).isEqualTo(888)
+    }
 
     @Test
     fun share() {
@@ -64,6 +90,8 @@ class PersistentReplayRelayKtTest {
             )
             .test()
             .assertOf({ assertThat(stateFirst).isEqualTo(4) })
+
+        disposableRestores.dispose()
     }
 
     @Test

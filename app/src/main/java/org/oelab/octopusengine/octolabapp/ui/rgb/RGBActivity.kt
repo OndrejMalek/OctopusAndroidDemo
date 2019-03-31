@@ -18,6 +18,7 @@ import com.jakewharton.rxbinding3.widget.checkedChanges
 import com.jakewharton.rxbinding3.widget.textChanges
 import com.skydoves.colorpickerview.ColorPickerView
 import eu.malek.INFINITE_SIZE
+import eu.malek.persistSingleStateOfView
 import eu.malek.persistState
 import eu.malek.utils.UtilsViewGroup
 import io.reactivex.Observable
@@ -241,27 +242,6 @@ class RGBActivity : AppCompatActivity() {
             .addTo(subscriptions)
     }
 
-    /**
-     * Persist state of android view represented by single value (EditText, Button Click, Radio .ie not lists)
-     */
-    fun <T : Any> persistSingleStateOfView(
-        appScopeMap: HashMap<String, Any>,
-        storageId: String,
-        setValue: (T) -> Unit,
-        defaultItem: T
-    ): (Observable<T>) -> Observable<T> {
-        return persistState(
-            scopeMap = appScopeMap,
-            storageId = storageId,
-            storedItemsMaxCount = 1,
-            restoreState = { observable ->
-                observable
-                    .lastElement()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribeBy(onSuccess = setValue)
-            }
-        )
-    }
 
 
 

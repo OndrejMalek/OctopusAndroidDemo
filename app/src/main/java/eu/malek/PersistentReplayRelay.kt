@@ -3,7 +3,10 @@ package eu.malek
 import com.jakewharton.rxrelay2.ReplayRelay
 import io.reactivex.Observable
 import io.reactivex.ObservableTransformer
+import io.reactivex.Scheduler
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.subjects.ReplaySubject
 import java.util.HashMap
 
@@ -32,10 +35,17 @@ fun <T> persistState(
         val restored: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
 
         var disposable: Disposable? = null
-        if (restoreState != null && restored.values.isNotEmpty()) restoreState.invoke(
-            ReplaySubject.fromArray<T>(*restored.values as Array<T>)
-                .doOnComplete { disposable = from.subscribe(restored) })
-        else disposable = from.subscribe(restored)
+        if (restoreState != null) {
+
+            restoreState.invoke((
+                    if (restored.values.isNotEmpty())
+                        ReplaySubject.fromArray<T>(*restored.values as Array<T>)
+                    else Observable.empty<T>()
+                    )
+                .doOnComplete { disposable = from.subscribe(restored) }
+            )
+
+        } else disposable = from.subscribe(restored)
 
 //        val stream = getStream(scopeMap, storageId) { restored }
         val stream = restored
@@ -108,3 +118,31 @@ private fun <T> createRelay(storedItemsMaxCount: Int): ReplayRelay<T> {
     else
         ReplayRelay.create()
 }
+
+
+/**
+ * Persist state of android view represented by single value (EditText, Button Click, Radio .ie not lists)
+ */
+fun <T : Any> persistSingleStateOfView(
+    scopeMap: HashMap<String, Any>,
+    storageId: String,
+    setValue: (T) -> Unit,
+    defaultItem: T? = null,
+    scheduler: Scheduler = AndroidSchedulers.mainThread(),
+    storedItemsMaxCount:Int = 1
+): (Observable<T>) -> Observable<T> {
+    return persistState(
+        scopeMap = scopeMap,
+        storageId = storageId,
+        storedItemsMaxCount = storedItemsMaxCount,
+        restoreState = { observable ->
+            observable
+                .compose({
+                    if (defaultItem == null) it.lastElement().toObservable() else it.last(defaultItem).toObservable()
+                })
+                .observeOn(scheduler)
+                .subscribeBy(onNext = setValue)
+        }
+    )
+}
+

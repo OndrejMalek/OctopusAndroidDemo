@@ -7,7 +7,7 @@ import io.reactivex.schedulers.Schedulers
 import org.junit.Test
 import org.oelab.octopusengine.octolabapp.ui.rgb.*
 
-class RGBActivityFragmentTest {
+class RGBRemoteKtTest {
 
     private val toggleOn = ToggleConnectionEvent(true, "1.1.1.1", "10")
 
@@ -48,6 +48,7 @@ class RGBActivityFragmentTest {
     fun broadcastRgbViaUdp_noError_opensSocket() {
         val socket = mockk<IUdpSocket>()
         every { socket.open() }.just(Runs)
+        every { socket.send(any(),any(), any(), any()) }.just(Runs)
 
         val validCheckedModel = CheckedUdpFieldsUIModel(true, true, toggleOn)
         val rgbEventSource = Observable.just(red, blue)
@@ -62,7 +63,8 @@ class RGBActivityFragmentTest {
                     checkedModel = validCheckedModel
                 )
             )
-            .assertOf { verify(exactly = 1) { socket.open() } }
+            .assertNoErrors()
+            .assertOf { verify(exactly = 2) { socket.open() } }
             .assertOf {
                 verify(exactly = 2 * 3) {
                     socket.send(
@@ -73,7 +75,6 @@ class RGBActivityFragmentTest {
                     )
                 }
             }
-            .assertNoErrors()
     }
 
     private val blue = RGB(0, 0, 255)
@@ -125,5 +126,15 @@ class RGBActivityFragmentTest {
                 ),
                 SendErrorModel()
             )
+    }
+
+
+    @Test
+    fun index() {
+        Observable.range(4,4)
+            .map { Unit }
+            .compose (index(0))
+            .test()
+            .assertValues(0,1,2,3)
     }
 }
