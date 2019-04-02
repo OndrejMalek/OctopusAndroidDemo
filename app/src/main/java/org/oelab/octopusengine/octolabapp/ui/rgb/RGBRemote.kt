@@ -43,9 +43,10 @@ data class CheckedUdpFieldsUIModel(
     val toggleEvent: ToggleConnectionEvent = ToggleConnectionEvent()
 )
 
-fun createRgbDeviceStream(
+fun createRgbDeviceStreamWithState(
     toggleConnectionButtonChangedEvent: Observable<ToggleConnectionEvent>,
-    rgbPickerChangedStream: Observable<ColorPickerState>
+    rgbChangedStream: Observable<RGB>,
+    udpSocket: UdpSocket
 ): Observable<Any> {
     val udpFieldsCheckedEvent = toggleConnectionButtonChangedEvent
         .observeOn(Schedulers.io())
@@ -53,7 +54,7 @@ fun createRgbDeviceStream(
         .share()
 
     val broadcastRGBVieUdpEvent = udpFieldsCheckedEvent
-        .compose(broadcastRgbViaUdp(rgbPickerChangedStream.map { it.rgb }, UdpSocket(), Schedulers.io()))
+        .compose(broadcastRgbViaUdp(rgbChangedStream, udpSocket, Schedulers.io()))
 
     return Observable.mergeDelayError(
         toggleConnectionButtonChangedEvent,

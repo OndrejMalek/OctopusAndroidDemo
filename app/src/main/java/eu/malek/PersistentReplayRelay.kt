@@ -1,6 +1,9 @@
 package eu.malek
 
+import com.jakewharton.rxrelay2.PublishRelay
 import com.jakewharton.rxrelay2.ReplayRelay
+
+
 import io.reactivex.Observable
 import io.reactivex.ObservableTransformer
 import io.reactivex.Scheduler
@@ -10,12 +13,9 @@ import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.subjects.ReplaySubject
 import java.util.HashMap
 
-
-const val INFINITE_SIZE = -1
-
 fun <T> persistentReplay(
     storageId: String,
-    storedItemsMaxCount: Int = 1,
+    storedItemsMaxCount: Int = INFINITE_SIZE,
     scopeMap: HashMap<String, Any>
 ): (Observable<T>) -> Observable<T> =
     { from ->
@@ -24,17 +24,23 @@ fun <T> persistentReplay(
         relay
     }
 
+const val INFINITE_SIZE = -1
 
+/**run.num
+ * 1st  -   restore from disk -> restoreState, record emitted items
+ * 2nd+ -   restore from cache -> -||-
+ * last -   save to disk
+ */
 fun <T> persistState(
     scopeMap: HashMap<String, Any>,
     storageId: String,
-    storedItemsMaxCount: Int = 1,
+    storedItemsMaxCount: Int = INFINITE_SIZE,
     restoreState: ((Observable<T>) -> Unit)? = null
 ): (Observable<T>) -> Observable<T> =
     { from: Observable<T> ->
         val restored: ReplayRelay<T> = getRelay(scopeMap, storageId, storedItemsMaxCount)
 
-        var disposable: Disposable? = null
+        var restoredDisposable: Disposable? = null
         if (restoreState != null) {
 
             restoreState.invoke((
@@ -42,14 +48,21 @@ fun <T> persistState(
                         ReplaySubject.fromArray<T>(*restored.values as Array<T>)
                     else Observable.empty<T>()
                     )
-                .doOnComplete { disposable = from.subscribe(restored) }
+                .doOnComplete {
+                    restoredDisposable = from.subscribe(restored)
+                }
             )
 
-        } else disposable = from.subscribe(restored)
+        } else restoredDisposable = from.subscribe(restored)
 
 //        val stream = getStream(scopeMap, storageId) { restored }
-        val stream = restored
-        stream.doOnDispose { disposable?.dispose() }
+//
+////        val stream = restored
+//        stream.doOnDispose { restoredDisposable?.dispose() }
+
+
+        restored.doOnDispose { restoredDisposable?.dispose() }
+
     }
 
 
@@ -120,16 +133,17 @@ private fun <T> createRelay(storedItemsMaxCount: Int): ReplayRelay<T> {
 }
 
 
+val NO_DEFAULT = null
 /**
  * Persist state of android view represented by single value (EditText, Button Click, Radio .ie not lists)
  */
-fun <T : Any> persistSingleStateOfView(
+fun <T : Any> persistStateOfSingleValueView(
     scopeMap: HashMap<String, Any>,
     storageId: String,
-    setValue: (T) -> Unit,
-    defaultItem: T? = null,
+    restoreValue: (T) -> Unit,
+    defaultItem: T? = NO_DEFAULT,
     scheduler: Scheduler = AndroidSchedulers.mainThread(),
-    storedItemsMaxCount:Int = 1
+    storedItemsMaxCount: Int = 1
 ): (Observable<T>) -> Observable<T> {
     return persistState(
         scopeMap = scopeMap,
@@ -138,11 +152,71 @@ fun <T : Any> persistSingleStateOfView(
         restoreState = { observable ->
             observable
                 .compose({
-                    if (defaultItem == null) it.lastElement().toObservable() else it.last(defaultItem).toObservable()
+                    if (defaultItem == NO_DEFAULT) it.lastElement().toObservable() else it.last(defaultItem).toObservable()
                 })
                 .observeOn(scheduler)
-                .subscribeBy(onNext = setValue)
+                .subscribeBy(onNext = restoreValue)
         }
     )
 }
 
+fun <T> getOrCreateStream(
+    appScopeMap: HashMap<String, Any>,
+    storageId: String,
+    factory: () -> Observable<T>
+): Observable<T> {
+    return appScopeMap
+        .getOrPut(storageId, {
+            val published = factory.invoke().publish()
+            published.connect()
+            published
+        }) as Observable<T>
+
+}
+
+/**
+ * Return reconnectable observable which inputs are relays
+ *
+ * usage:
+ * val reconnectable:ReconnectableObservableWithInputs  =  getOrCreateStreamWithInput(...)
+ *
+ * observableInput0.subscribe(reconnectable.input0)
+ * observableInput1.subscribe(reconnectable.input1)
+ *
+ * InputStream.subscribe()
+ */
+fun getOrCreateStreamWithInput(
+    appScopeMap: HashMap<String, Any>,
+    storageId: String,
+    outputFactory: (ArrayList<*>) -> Observable<*>,
+    input0Factory: () -> PublishRelay<*> = {PublishRelay.create<Any>()},
+    input1Factory: () -> PublishRelay<*> = {PublishRelay.create<Any>()}
+): ReconnectableObservableWithInputs {
+    return appScopeMap
+        .getOrPut(storageId,
+            {
+                val input0 = input0Factory.invoke()
+                val input1 = input1Factory.invoke()
+                val published = outputFactory.invoke(
+                    arrayListOf(
+                        input0,
+                        input1
+                    )
+                ).publish()
+
+                published.connect()
+                ReconnectableObservableWithInputs(published, input0, input1)
+            }
+        ) as ReconnectableObservableWithInputs
+
+}
+
+/**
+ * Observable that can reconnect from both sides - input and output.
+ * @param input0 relay which should observe input stream
+ */
+data class ReconnectableObservableWithInputs(
+    val outputStream: Observable<*>,
+    val input0: PublishRelay<*>,
+    val input1: PublishRelay<*>
+)

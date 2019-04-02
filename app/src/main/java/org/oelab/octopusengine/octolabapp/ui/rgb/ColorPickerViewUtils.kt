@@ -38,7 +38,7 @@ fun setColorPickerState(
 }
 
 
-fun createRgbPickerSubject(
+fun createRgbPickerObservable(
     bsb: BrightnessSlideBar,
     cp: ColorPickerView,
     _alphaSlideBar: AlphaSlideBar

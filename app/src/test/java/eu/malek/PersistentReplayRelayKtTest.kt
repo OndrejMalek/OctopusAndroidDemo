@@ -1,14 +1,15 @@
 package eu.malek
 
+import com.google.common.truth.Truth
 import com.google.common.truth.Truth.*
+import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivecache2.Provider
 import io.reactivecache2.ReactiveCache
 import io.reactivex.Observable
-import io.reactivex.Scheduler
 import io.reactivex.Single
+import io.reactivex.observers.TestObserver
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
 import io.victoralbertos.jolyglot.GsonSpeaker
 import org.junit.Ignore
 import org.junit.Test
@@ -18,17 +19,55 @@ import java.io.File
 class PersistentReplayRelayKtTest {
 
     @Test
-    fun testPersistSingleStateOfView_whenValuesEmitted_doesNotSetDefault() {
+    fun testGetOrCreateStreamWithInput() {
+
+        val map = HashMap<String, Any>()
+        val (outputStream, input0, input1) = getOrCreateStreamWithInput(
+            map,
+            "test",
+            { inputs: ArrayList<*> ->
+                Observable.range(0,5)
+                    .mergeWith(inputs[0] as Observable<Int>)
+                    .mergeWith(inputs[1] as Observable<Int>)
+            },
+            { PublishRelay.create<Int>() },
+            { PublishRelay.create<Int>() }
+        )
+
+        val test: TestObserver<Int> = outputStream.test() as TestObserver<Int>
+        val testInput0 = input0.test()
+        val testInput1 = input1.test()
+        Observable.range(0,3).subscribe(input0 as PublishRelay<Int>)
+        Observable.range(10,3).subscribe(input1 as PublishRelay<Int>)
+
+        println(map)
+        testInput0.assertValueCount(3)
+        testInput1.assertValueCount(3)
+        test.assertValues(0, 1, 2, 10, 11, 12)
+
+
+    }
+
+    @Test
+    fun testPersistSingleStateOfView_whenValuesEmitted_SetDefault() {
         var restoredState: Int = 999
         val appScopeMap = HashMap<String, Any>()
         val LAST_VALUE = 4
 
-        Observable.range(0,5)
-            .compose(persistSingleStateOfView(appScopeMap,"test",{restoredState = it},888) )
+        Observable.range(0, 5)
+            .compose(
+                persistStateOfSingleValueView(
+                    appScopeMap,
+                    "test",
+                    { restoredState = it },
+                    888,
+                    Schedulers.trampoline()
+                )
+            )
             .test()
             .assertValues(LAST_VALUE)
             .assertOf({
-                assertThat(restoredState).isEqualTo(999)
+                assertThat(restoredState).isEqualTo(888)
             })
     }
 
@@ -38,33 +77,20 @@ class PersistentReplayRelayKtTest {
         val appScopeMap = HashMap<String, Any>()
 
         Observable.empty<Int>()
-            .compose(persistSingleStateOfView(appScopeMap,"test",{restoredState = it},888, Schedulers.trampoline()) )
+            .compose(
+                persistStateOfSingleValueView(
+                    appScopeMap,
+                    "test",
+                    { restoredState = it },
+                    888,
+                    Schedulers.trampoline()
+                )
+            )
             .test()
 
         assertThat(restoredState).isEqualTo(888)
     }
 
-    @Test
-    fun share() {
-
-
-        val subject = PublishSubject.create<Int>()
-        val observable = Observable.range(1, 3)
-            .concatWith(Observable.range(4, 3))
-            .concatWith(subject)
-//            .materialize()
-
-        subject.onNext(999)
-
-        val disposable = observable
-            .subscribeBy { println(it) }
-        disposable.dispose()
-
-        observable
-            .subscribeBy { println(it) }
-
-        subject.subscribeBy { println(it) }
-    }
 
     @Test
     fun persistState_r() {
@@ -124,13 +150,12 @@ class PersistentReplayRelayKtTest {
     fun persistState_restoresState_keepsValues() {
         val scopeMap = HashMap<String, Any>()
 
-        var stateFirst: Int? = 999
         val disposable = Observable.range(0, 5)
             .compose(
                 persistState(
                     scopeMap = scopeMap,
                     storageId = "test1",
-                    restoreState = { restore -> restore.subscribeBy { stateFirst = it } })
+                    restoreState = { restore -> restore.subscribe() })
             ).subscribe()
         disposable.dispose()
 
@@ -139,11 +164,13 @@ class PersistentReplayRelayKtTest {
                 persistState(
                     scopeMap = scopeMap,
                     storageId = "test1",
-                    restoreState = { restore -> restore.subscribeBy { stateFirst = it } }
+                    restoreState = { restore -> restore.subscribe() }
                 )
             )
             .test()
-            .assertValues(0,1,2,3,4,5,6,7,8,9)
+            .assertValues(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+        disposableRestores.dispose()
     }
 
     @Test
@@ -228,16 +255,8 @@ class PersistentReplayRelayKtTest {
     }
 
     @Ignore
-    fun persistState_keepsStream() {
-        val scopeMap = HashMap<String, Any>()
+    fun persistState_reconnectsToStream() {
 
-        val observableOut = Observable.range(0, 5)
-            .compose(persistState(scopeMap, "test1"))
-        val observableOut2 = Observable.range(5, 5)
-            .compose(persistState(scopeMap, "test1"))
-
-
-        assertThat(observableOut).isSameAs(observableOut2)
     }
 
     @Test

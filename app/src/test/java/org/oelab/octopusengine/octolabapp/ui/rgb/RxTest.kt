@@ -1,5 +1,6 @@
 package org.oelab.octopusengine.octolabapp.ui.rgb
 
+import com.jakewharton.rxrelay2.PublishRelay
 import com.jakewharton.rxrelay2.ReplayRelay
 import io.reactivex.Observable
 import io.reactivex.subjects.ReplaySubject
@@ -41,6 +42,47 @@ class RxTest {
         replay.test().assertValueCount(3)
 
         disposable1.dispose()
+    }
+
+    @Test
+    fun testReconnectToObservable() {
+        val subject = ReplaySubject.create<Int>()
+
+        subject.onNext(0)
+        val publish = subject.publish()
+        subject.onNext(0)
+        subject.onNext(0)
+
+        val test = publish.test()
+        publish.connect()
+        publish.subscribe { println(it) }
+
+
+        subject.onNext(2)
+        test.assertValueCount(4)
+    }
+
+
+    @Test
+    fun testReconnectWithRelays() {
+        val relay = PublishRelay.create<Int>()
+        val publish = Observable.never<Int>()
+            .mergeWith(relay)
+            .map { it + 100 }
+            .publish()
+        publish.connect()
+
+        val observableWithInputRelayTest = publish
+            .test()
+        val testRelay = relay.test()
+
+
+        Observable.range(0,5).subscribe(relay)
+
+        testRelay.assertValueCount(5)
+        observableWithInputRelayTest
+            .assertValues(100, 101, 102, 103, 104)
+            .assertValueCount(5)
     }
 }
 
