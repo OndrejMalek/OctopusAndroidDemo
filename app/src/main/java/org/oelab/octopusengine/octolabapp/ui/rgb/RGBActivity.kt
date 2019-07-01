@@ -171,9 +171,7 @@ class RGBActivity : AppCompatActivity() {
                             )
                         }
                     }
-                },
-
-                onError = { throwable -> throw OnErrorNotImplementedException(throwable) }
+                }
             ).addTo(subscriptions)
 
     }
