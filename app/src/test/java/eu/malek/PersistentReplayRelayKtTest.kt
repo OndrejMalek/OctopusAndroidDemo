@@ -286,7 +286,6 @@ class PersistentReplayRelayKtTest {
             .assertValues(0, 1, 2, 3, 4)
     }
 
-
     @Test
     fun persistentReplay_passesValues() {
         val scopeMap = HashMap<String, Any>()

@@ -77,7 +77,7 @@ class RxTest {
         val testRelay = relay.test()
 
 
-        Observable.range(0,5).subscribe(relay)
+        Observable.range(0, 5).subscribe(relay)
 
         testRelay.assertValueCount(5)
         observableWithInputRelayTest
